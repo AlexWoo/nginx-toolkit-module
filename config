@@ -1,0 +1,5 @@
+ngx_addon_name=ngx_event_timer_module
+EVENT_MODULES="$EVENT_MODULES ngx_event_timer_module"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_event_timer_module.c"
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/ngx_event_timer_module.h"
+
