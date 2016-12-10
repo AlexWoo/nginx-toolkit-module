@@ -19,13 +19,13 @@ Sets the maximum number of timers that can be used worker process.
 
 ## API
 
-** header file **
+**header file**
 
 For using this API, You should include the header file as below:
 
 	#include "ngx_event_timer_module.h"
 
-** add timer **
+**add timer**
 
 	ngx_int_t ngx_event_timer_add_timer(ngx_msec_t tv,
 	        ngx_timer_handler_pt h, void *data);
@@ -46,7 +46,7 @@ h's protype is:
 
 	typedef void (* ngx_timer_handler_pt)(void *data);
 
-** del timer **
+**del timer**
 
 	void ngx_event_timer_del_timer(ngx_uint_t timerid);
 
