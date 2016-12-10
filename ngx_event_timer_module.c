@@ -3,14 +3,12 @@
  */
 
 
-#include <ngx_config.h>
-#include <ngx_core.h>
 #include "ngx_event_timer_module.h"
 
 
 static ngx_int_t ngx_event_timer_process_init(ngx_cycle_t *cycle);
 
-static void *ngx_event_timer_create_conf(ngx_cycle_t *cf);
+static void *ngx_event_timer_create_conf(ngx_cycle_t *cycle);
 static char *ngx_event_timer_init_conf(ngx_cycle_t *cycle, void *conf);
 
 
@@ -22,7 +20,6 @@ typedef struct {
     ngx_timer_handler_pt    handler;
     void                   *data;
 } ngx_event_timer_ctx_t;
-
 
 typedef struct {
     ngx_uint_t              timer_n;
@@ -180,15 +177,11 @@ static void
 ngx_event_timer_event_handler(ngx_event_t *e)
 {
     ngx_event_timer_ctx_t      *ctx;
-    ngx_timer_handler_pt        h;
-    void                       *data;
 
     ctx = e->data;
-    h = ctx->handler;
-    data = ctx->data;
 
-    if (h) {
-        h(data);
+    if (ctx->handler) {
+        ctx->handler(ctx->data);
     }
 
     ngx_event_timer_free_timer(ctx);
