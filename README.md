@@ -2,7 +2,9 @@
 ---
 ## Instructions
 
-Independent timer for nginx
+Independent timer for nginx, submodule:
+
+- [nginx-dynamic-resolv-module](https://github.com/AlexWoo/nginx-timer-module/blob/master/dynamic_resolv.md) used nginx-timer-module to resolv domains registered in system every timeinterval
 
 ## Directives
 
