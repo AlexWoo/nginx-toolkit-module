@@ -28,7 +28,7 @@ Example:
 
 	events {
 		...
-		dynamic_resolver       60s;
+		dynamic_resolver       8.8.8.8 60s;
 		resolver_timeout			30s;
 		resolver_hash_bucket_size 64
 	}
