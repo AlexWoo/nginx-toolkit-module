@@ -183,8 +183,7 @@ ngx_dynamic_resolv_resolver_handler(ngx_resolver_ctx_t *ctx)
     if (dynamic_resolv_ctx == NULL) {
         ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
                       "dynamic resolv, %V has been deleted", &ctx->name);
-        ngx_resolve_name_done(ctx);
-        return;
+        goto failed;
     }
 
     if (ctx->state) {
@@ -205,8 +204,52 @@ ngx_dynamic_resolv_resolver_handler(ngx_resolver_ctx_t *ctx)
     }
 
 failed:
-    dynamic_resolv_ctx->ctx = NULL;
+    if (dynamic_resolv_ctx) {
+        dynamic_resolv_ctx->ctx = NULL;
+    }
     ngx_resolve_name_done(ctx);
+}
+
+static void
+ngx_dynamic_resolv_resolver_start(ngx_dynamic_resolv_ctx_t *dynamic_resolv_ctx)
+{
+    ngx_dynamic_resolv_conf_t      *drcf;
+    ngx_resolver_ctx_t             *ctx, temp;
+
+    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolv_module);
+
+    temp.name = dynamic_resolv_ctx->domain;
+
+    ctx = ngx_resolve_start(drcf->resolver, &temp);
+    if (ctx == NULL) {
+        goto failed;
+    }
+
+    if (ctx == NGX_NO_RESOLVER) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolv, "
+            "no resolver defined to resolv %V", &dynamic_resolv_ctx->domain);
+        goto failed;
+    }
+
+    ctx->name = dynamic_resolv_ctx->domain;
+    ctx->handler = ngx_dynamic_resolv_resolver_handler;
+    ctx->data = dynamic_resolv_ctx;
+    ctx->timeout = drcf->resolver_timeout;
+    dynamic_resolv_ctx->ctx = ctx;
+
+    if (ngx_resolve_name(ctx) != NGX_OK) { /* send DNS query here */
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolv, "
+            "resolv %V failed", &dynamic_resolv_ctx->domain);
+        goto failed;
+    }
+
+    return;
+
+failed:
+    if (ctx == NULL || ctx == NGX_NO_RESOLVER) {
+        dynamic_resolv_ctx->ctx = NULL;
+        ngx_resolve_name_done(ctx);
+    }
 }
 
 static void
@@ -214,7 +257,6 @@ ngx_dynamic_resolv_start_resolver(void *data)
 {
     ngx_dynamic_resolv_conf_t      *drcf;
     ngx_dynamic_resolv_ctx_t       *dynamic_resolv_ctx;
-    ngx_resolver_ctx_t             *ctx, temp;
     ngx_uint_t                      i;
 
     drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolv_module);
@@ -222,41 +264,7 @@ ngx_dynamic_resolv_start_resolver(void *data)
     for (i = 0; i < drcf->resolver_hash_bucket_size; ++i) {
         dynamic_resolv_ctx = drcf->resolver_hash[i];
         while (dynamic_resolv_ctx) {
-            temp.name = dynamic_resolv_ctx->domain;
-
-            ctx = ngx_resolve_start(drcf->resolver, &temp);
-            if (ctx == NULL) {
-                goto failed;
-            }
-
-            if (ctx == NGX_NO_RESOLVER) {
-                ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
-                    "dynamic resolv, no resolver defined to resolv %V",
-                    &dynamic_resolv_ctx->domain);
-                goto failed;
-            }
-
-            ctx->name = dynamic_resolv_ctx->domain;
-            ctx->handler = ngx_dynamic_resolv_resolver_handler;
-            ctx->data = dynamic_resolv_ctx;
-            ctx->timeout = drcf->resolver_timeout;
-            dynamic_resolv_ctx->ctx = ctx;
-
-            if (ngx_resolve_name(ctx) != NGX_OK) { /* Send DNS query here*/
-                goto failed;
-            }
-
-            goto next_domain;
-
-failed:
-            /* We don't set dynamic_resolv_ctx->ctx to NULL,
-               So we can use address before if failed */
-            if (ctx) {
-                dynamic_resolv_ctx->ctx = NULL;
-                ngx_resolve_name_done(ctx);
-            }
-
-next_domain:
+            ngx_dynamic_resolv_resolver_start(dynamic_resolv_ctx);
             dynamic_resolv_ctx = dynamic_resolv_ctx->next;
         }
     }
@@ -328,8 +336,8 @@ ngx_dynamic_resolv_add_domain(ngx_str_t *domain)
     idx = ngx_hash_key_lc(domain->data, domain->len);
     idx %= drcf->resolver_hash_bucket_size;
 
-    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, ngx_cycle->log, 0, "dynamic resolv, "
-            "prepare add %V in %d slot", domain, idx);
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolv, "
+                  "prepare add %V in %d slot", domain, idx);
 
     /* domain already exist */
     ctx = drcf->resolver_hash[idx];
@@ -358,6 +366,13 @@ ngx_dynamic_resolv_add_domain(ngx_str_t *domain)
     /* link dynamic_resolv_ctx to hash table */
     ctx->next = drcf->resolver_hash[idx];
     drcf->resolver_hash[idx] = ctx;
+
+    /* query DNS right now */
+    if (ngx_process != NGX_PROCESS_WORKER) {
+        return;
+    }
+
+    ngx_dynamic_resolv_resolver_start(ctx);
 }
 
 void
@@ -375,8 +390,8 @@ ngx_dynamic_resolv_del_domain(ngx_str_t *domain)
     idx = ngx_hash_key_lc(domain->data, domain->len);
     idx %= drcf->resolver_hash_bucket_size;
 
-    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, ngx_cycle->log, 0, "dynamic resolv, "
-            "prepare del %V in %d slot", domain, idx);
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolv, "
+                  "prepare del %V in %d slot", domain, idx);
 
     for (pctx = &drcf->resolver_hash[idx]; *pctx; pctx = &(*pctx)->next) {
         if ((*pctx)->domain.len == domain->len &&
