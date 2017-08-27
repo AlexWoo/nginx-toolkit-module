@@ -93,7 +93,7 @@ ngx_event_timer_init_conf(ngx_cycle_t *cycle, void *conf)
 {
     ngx_event_timer_conf_t     *etcf = conf;
 
-    ngx_conf_init_uint_value(etcf->timer_n, 0);
+    ngx_conf_init_uint_value(etcf->timer_n, 1024);
 
     return NGX_CONF_OK;
 }
