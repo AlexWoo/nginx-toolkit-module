@@ -33,9 +33,9 @@ For using this API, You should include the header file as below:
 - return value:
 
 	return timerid for successd, NGX_ERROR for failed.
-	
+
 	Error:
-		
+
 	- h is NULL
 	- not enough timer for assigned
 
@@ -69,7 +69,7 @@ h's protype is:
 
 - paras:
 
-	- timerid: return by ngx_event_timer_add_timer
+	- timerid: return by ngx\_event\_timer\_add\_timer
 
 Deregister timer handler.
 
@@ -77,7 +77,7 @@ Deregister timer handler.
 
 cd to NGINX source directory & run this:
 
-	./configure --add-module=/path/to/nginx-timer-module/
+	./configure --add-module=/path/to/nginx-toolkit-module/
 	make && make install
 
 ## Example
@@ -86,7 +86,7 @@ See t/ngx\_event\_timer\_test\_module.c as reference
 
 Build:
 
-	./configure --add-module=/path/to/nginx-timer-module/t/ --add-module=/path/to/nginx-timer-module/
+	./configure --add-module=/path/to/nginx-toolkit-module/t/ --add-module=/path/to/nginx-toolkit-module/
 	make && make install
 
 Configure:

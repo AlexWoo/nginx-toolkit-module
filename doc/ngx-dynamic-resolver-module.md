@@ -1,4 +1,4 @@
-# Module ngx-dynamic-resolv-module
+# Module ngx-dynamic-resolver-module
 ---
 ## Instructions
 
@@ -82,7 +82,7 @@ h's protype is:
 
 cd to NGINX source directory & run this:
 
-	./configure --add-module=/path/to/nginx-timer-module/
+	./configure --add-module=/path/to/nginx-toolkit-module/
 	make && make install
 
 ## Example
@@ -91,7 +91,7 @@ See t/ngx\_dynamic\_resolver\_test\_module.c as reference
 
 Build:
 
-	./configure --with-debug --add-module=/path/to/nginx-timer-module/ --add-module=/path/to/nginx-timer-module/t
+	./configure --with-debug --add-module=/path/to/nginx-toolkit-module/ --add-module=/path/to/nginx-toolkit-module/t
 	make && make install
 
 Configure:
@@ -100,15 +100,15 @@ Configure:
 		resolver                  192.168.84.254 valid=1m;
 		dynamic_refresh_interval  5m;
 	}
-	
+
 	http {
-	
+
 		...
-	
+
 		server {
-	
+
 			...
-			
+
 			location /dynamic_resolver_test/ {
 				dynamic_resolver_test;
 			}

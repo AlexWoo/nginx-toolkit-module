@@ -28,7 +28,7 @@ By default, nginx caches answers using the TTL value of a response. The optional
 
 Sets a timeout for name resolution, for example:
 
-> resolver_timeout 5s;
+> resolver\_timeout 5s;
 
 Example:
 
@@ -80,7 +80,7 @@ h's protype is:
 
 cd to NGINX source directory & run this:
 
-	./configure --add-module=/path/to/nginx-timer-module/
+	./configure --add-module=/path/to/nginx-toolkit-module/
 	make && make install
 
 ## Example
@@ -89,7 +89,7 @@ See t/ngx\_event\_resolver\_test\_module.c as reference
 
 Build:
 
-	./configure --with-debug --add-module=/path/to/nginx-timer-module/ --add-module=/path/to/nginx-timer-module/t
+	./configure --with-debug --add-module=/path/to/nginx-toolkit-module/ --add-module=/path/to/nginx-toolkit-module/t
 	make && make install
 
 Configure:
@@ -98,15 +98,15 @@ Configure:
 		resolver                  192.168.84.254 114.114.114.114 valid=20s;
 		resolver_timeout          10s;
 	}
-	
+
 	http {
-	
+
 		...
-	
+
 		server {
-	
+
 			...
-			
+
 			location /event_resolver_test/ {
 				event_resolver_test;
 			}
@@ -115,8 +115,8 @@ Configure:
 
 Install bind server
 
-	/path/to/nginx-timer-module/t/dns_install.sh
-	
+	/path/to/nginx-toolkit-module/t/dns_install.sh
+
 modify /var/named/test.com.zone dns ip address to fit your enviroment
 
 Test:
