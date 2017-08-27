@@ -1,4 +1,4 @@
-# Module nginx-event-resolver-module
+# Module ngx-event-resolver-module
 ---
 ## Instructions
 
@@ -10,24 +10,17 @@ Common resovler in event modules, just like http resolver, stream resolver in ng
 	Default : -
 	Context : events
 
-Configures name servers used to resolve names of upstream servers into addresses, for example:
+Configures name servers used to resolve names into addresses, for example:
 
 > resolver 127.0.0.1 [::1]:5353;
 
-An address can be specified as a domain name or IP address, and an optional port (1.3.1, 1.2.2). If port is not specified, the port 53 is used. Name servers are queried in a round-robin fashion.
-
-> Before version 1.1.7, only a single name server could be configured. Specifying name servers using IPv6 addresses is supported starting from versions 1.3.1 and 1.2.2.
+An address can be specified as a domain name or IP address, and an optional port. If port is not specified, the port 53 is used. Name servers are queried in a round-robin fashion.
 
 By default, nginx will look up both IPv4 and IPv6 addresses while resolving. If looking up of IPv6 addresses is not desired, the ipv6=off parameter can be specified.
 
-> Resolving of names into IPv6 addresses is supported starting from version 1.5.8.
-
-By default, nginx caches answers using the TTL value of a response. An optional valid parameter allows overriding it:
+By default, nginx caches answers using the TTL value of a response. The optional valid parameter allows overriding it:
 
 > resolver 127.0.0.1 [::1]:5353 valid=30s;
-
-Before version 1.1.9, tuning of caching time was not possible, and nginx always cached answers for the duration of 5 minutes.
-To prevent DNS spoofing, it is recommended configuring DNS servers in a properly secured trusted local network.
 
 	Syntax  : resolver_timeout time;
 	Default : resolver_timeout 60s;
@@ -78,7 +71,7 @@ h's protype is:
 
 - paras:
 
-	- data  : user private data set in ngx_event_resolver_start_resolver
+	- data  : user private data set in ngx\_event\_resolver\_start\_resolver
 	- addrs : addrs resolv by DNS
 	- naddrs: number of addrs resolv by DNS
 

@@ -236,4 +236,3 @@ failed:
         ngx_event_resolver_put_ctx(erctx);
     }
 }
-

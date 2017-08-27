@@ -235,4 +235,3 @@ ngx_event_timer_del_timer(ngx_uint_t timerid)
     ngx_event_del_timer(&ctx->event);
     ngx_event_timer_free_timer(ctx);
 }
-

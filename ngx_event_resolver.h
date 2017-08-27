@@ -34,4 +34,3 @@ void ngx_event_resolver_start_resolver(ngx_str_t *domain,
 
 
 #endif
-

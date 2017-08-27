@@ -32,4 +32,3 @@ ngx_int_t ngx_event_timer_add_timer(ngx_msec_t tv,
 void ngx_event_timer_del_timer(ngx_uint_t timerid);
 
 #endif
-
