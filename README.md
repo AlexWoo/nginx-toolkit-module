@@ -18,6 +18,10 @@ Nginx event toolkit modules. It contains modules below, and will add more in the
 
 	The module will return addr whose domain is resolved in dynamic resolver, otherwise, the module will add domain into dynamic resolver, resolv domain by event resolver, and call callback when resolved.
 
+- [ngx-dynamic-conf-module](doc/ngx-dynamic-conf-module.md)
+
+System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker.
+
 ## TODO
 
 next will merge nginx-multiport-module into it
