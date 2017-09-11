@@ -4,7 +4,7 @@
 
 System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker.
 
-Now it only support NGX_CORE_MODULE
+Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
 
 ## Directives
 
@@ -26,6 +26,8 @@ Example:
 	dynamic_log     logs/error_dynamic.log  info;
 
 ## API
+
+### MAIN dynamic conf
 
 **header file**
 
@@ -68,7 +70,7 @@ dynamic conf module define as below
 
 - return value:
 
-	- return NGX_OK for successd, NGX_ERROR for failed
+	- return NGX\_OK for successd, NGX\_ERROR for failed
 
 - paras:
 
@@ -104,6 +106,51 @@ compile regex
 	
 return NGX\_CORE\_MODULE dynamic config for module
 
+### HTTP dynamic conf
+
+**header file**
+
+For using this API, You should include the header file as below:
+
+	#include "ngx_dynamic_conf.h"
+
+**dynamic module define**
+
+dynamic conf module define is same as MAIN dynamic conf
+
+http dynamic conf context define as below:
+
+	typedef struct {
+	    void       *(*create_main_conf)(ngx_conf_t *cf);
+	    char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
+	
+	    void       *(*create_srv_conf)(ngx_conf_t *cf);
+	    char       *(*init_srv_conf)(ngx_conf_t *cf, void *conf);
+	
+	    void       *(*create_loc_conf)(ngx_conf_t *cf);
+	    char       *(*init_loc_conf)(ngx_conf_t *cf, void *conf);
+	} ngx_http_dynamic_module_t;
+
+**notice:** http dynamic conf do not support merge
+
+**ngx\_http\_get\_module\_main\_dconf**
+
+	void *ngx_http_get_module_main_dconf(ngx_http_request_t *r, ngx_module_t *m);
+
+return http request main dynamic conf for module m
+
+**ngx\_http\_get\_module\_srv\_dconf**
+
+	void *ngx_http_get_module_srv_dconf(ngx_http_request_t *r, ngx_module_t *m);
+
+return http request srv dynamic conf for module m
+
+**ngx\_http\_get\_module\_loc\_dconf**
+
+	void *ngx_http_get_module_loc_dconf(ngx_http_request_t *r, ngx_module_t *m);
+
+return http request loc dynamic conf for module m
+
 ## Build
 
 cd to NGINX source directory & run this:
@@ -113,14 +160,17 @@ cd to NGINX source directory & run this:
 
 ## Example
 
-See t/ngx\_dynamic\_conf\_test\_module.c as reference
+See
 
-Build:
+- t/ngx\_dynamic\_conf\_test\_module.c as MAIN conf for usage of dynamic conf
+- t/ngx\_http\_dynamic\_test\_module.c as HTTP conf for usage of http dynamic conf
+
+**Build:**
 
 	./configure --with-debug --add-module=/path/to/nginx-toolkit-module/ --add-module=/path/to/nginx-toolkit-module/t
 	make && make install
 
-Configure:
+**Configure:**
 
 	dynamic_conf    conf/nginx_dynamic.conf 10;
 	dynamic_log     logs/error_dynamic.log  info;
@@ -139,10 +189,155 @@ Configure:
 		}
 	}
 
-Test:
+**Dynamic Configure:**
 
-- get conf configured in dynamic config file for test module
+	dynamic_test_i  200;
+	dynamic_test_s  hello_world;
+	
+	http {
+	    main_int    1000;
+	    main_str    gogogo;
+	
+	    #defult server
+	    server {
+	        srv_int         1;
+	        srv_str         default;
+	    }
+	
+	    #wildcard_head
+	    server {
+	        srv_int         2;
+	        srv_str         wildcard_head;
+	        serverid        baidu;
+	        server_name     *.baidu.com;
+	    }
+	
+	    #wildcard_tail
+	    server {
+	        srv_int         3;
+	        srv_str         wildcard_tail;
+	        serverid        google;
+	        server_name     www.google.*;
+	    }
+	
+	    #hash
+	    server {
+	        srv_int         4;
+	        srv_str         hash;
+	        serverid        sina;
+	        server_name     sports.sina.com.cn;
+	
+	        location = / {
+	            loc_int     1;
+	            loc_str     =/;
+	        }
+	
+	        location / {
+	            loc_int     2;
+	            loc_str     /;
+	        }
+	
+	        location ^~ /test1/ {
+	            loc_int     3;
+	            loc_str     ^~/test1/;
+	        }
+	
+	        location ~* \.(gif|jpg|jpeg)$ {
+	            loc_int     4;
+	            loc_str     ~*\.(gif|jpg|jpeg)$;
+	        }
+	
+	        location /test {
+	            loc_int     5;
+	            loc_str     /test;
+	        }
+	    }
+	
+	    #pcre
+	    server {
+	        srv_int         5;
+	        srv_str         pcre;
+	        serverid        test;
+	        server_name     ~^flv(?!.*(dl\.))[A-Za-z0-9]*\.test\.com$;
+	    }
+	
+	    #multi
+	    server {
+	        srv_int         6;
+	        srv_str         multi;
+	        serverid        others;
+	        server_name     ~^flv(?!.*(dl\.))[A-Za-z0-9]*\.haha\.com$ www.sohu.com;
+	        server_name     *.qq.com;
+	    }
+	}
+
+**Test:**
+
+- Main for dynamic config
+
+	get conf configured in dynamic config file for test module
 
 		curl -v 'http://127.0.0.1/dynamic_conf_test/test'
 
-change config in dynamic config, the test api will return new config value after dynamic conf refresh
+	change config in dynamic config, the test api will return new config value after dynamic conf refresh
+
+- Main for http
+
+		curl -v 'http://127.0.0.1/'
+
+	change config in http block of dynamic config, the test api will return new config value after dynamic conf refresh
+
+- Server for http
+
+	- defult server
+
+			curl -v 'http://127.0.0.1/http_dynamic_test/test'
+			curl -v -H 'Host: github.com' 'http://127.0.0.1/http_dynamic_test/test'
+
+	- wildcard_head
+
+			curl -v -H 'Host: map.baidu.com' 'http://127.0.0.1/http_dynamic_test/test'
+
+	- wildcard_tail
+
+			curl -v -H 'Host: www.google.co.jp' 'http://127.0.0.1/http_dynamic_test/test'
+
+	- hash
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/http_dynamic_test/test'
+
+	- pcre
+
+			curl -v -H 'Host: flvdl7a8e4223.test.com' 'http://127.0.0.1/http_dynamic_test/test'
+
+	- multi
+
+			curl -v -H 'Host: flvdl7a8e4223.haha.com' 'http://127.0.0.1/http_dynamic_test/test'
+			curl -v -H 'Host: www.sohu.com' 'http://127.0.0.1/http_dynamic_test/test'
+			curl -v -H 'Host: v.qq.com' 'http://127.0.0.1/http_dynamic_test/test'
+
+- Location for http
+
+	- no location
+
+			curl -v -H 'Host: flvdl7a8e4223.haha.com' 'http://127.0.0.1/'
+
+	- location = /
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/'
+
+	- location /
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/t'
+
+	- location ^~ /test1/
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/test1/123'
+
+	- ~* \.(gif|jpg|jpeg)$
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/test/123.gif'
+
+	- /test
+
+			curl -v -H 'Host: sports.sina.com.cn' 'http://127.0.0.1/test/123'

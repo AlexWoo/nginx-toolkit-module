@@ -76,6 +76,7 @@ ngx_dynamic_regex_t *ngx_dynamic_regex_compile(ngx_conf_t *cf,
         ngx_regex_compile_t *rc);
 #endif
 
+int ngx_dynamic_cmp_dns_wildcards(const void *one, const void *two);
 
 void *ngx_get_dconf(ngx_module_t *m);
 

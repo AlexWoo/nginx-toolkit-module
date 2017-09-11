@@ -681,6 +681,8 @@ ngx_dynamic_conf_load_conf(ngx_fd_t fd, ngx_dynamic_conf_conf_t *dccf)
     ngx_uint_t                  i;
     void                       *rv;
 
+    ngx_memzero(&cf, sizeof(ngx_conf_t));
+
     pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, dccf->log);
     if (pool == NULL) {
         return NGX_ERROR;
@@ -701,9 +703,13 @@ ngx_dynamic_conf_load_conf(ngx_fd_t fd, ngx_dynamic_conf_conf_t *dccf)
         goto failed;
     }
 
-    ngx_memzero(&cf, sizeof(ngx_conf_t));
     cf.args = ngx_array_create(pool, 10, sizeof(ngx_str_t));
     if (cf.args == NULL) {
+        goto failed;
+    }
+
+    cf.temp_pool = ngx_create_pool(NGX_CYCLE_POOL_SIZE, dccf->log);
+    if (cf.temp_pool == NULL) {
         goto failed;
     }
 
@@ -791,6 +797,10 @@ ngx_dynamic_conf_load_conf(ngx_fd_t fd, ngx_dynamic_conf_conf_t *dccf)
     return NGX_OK;
 
 failed:
+    if (cf.temp_pool) {
+        ngx_destroy_pool(cf.temp_pool);
+    }
+
     ngx_destroy_pool(pool);
 
     return NGX_ERROR;
@@ -914,6 +924,17 @@ ngx_dynamic_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
     return re;
 }
 #endif
+
+int
+ngx_dynamic_cmp_dns_wildcards(const void *one, const void *two)
+{
+    ngx_hash_key_t  *first, *second;
+
+    first = (ngx_hash_key_t *) one;
+    second = (ngx_hash_key_t *) two;
+
+    return ngx_dns_strcmp(first->key.data, second->key.data);
+}
 
 void *
 ngx_get_dconf(ngx_module_t *m)

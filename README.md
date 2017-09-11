@@ -22,6 +22,8 @@ Nginx event toolkit modules. It contains modules below, and will add more in the
 
 System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker.
 
+Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
+
 ## TODO
 
 next will merge nginx-multiport-module into it

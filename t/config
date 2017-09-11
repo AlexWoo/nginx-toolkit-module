@@ -10,6 +10,7 @@ HTTP_MODULES="$HTTP_MODULES                                                 \
              ngx_event_resolver_test_module                                 \
              ngx_dynamic_resolver_test_module                               \
              ngx_dynamic_conf_test_module                                   \
+             ngx_http_dynamic_test_module                                   \
              "
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                             \
@@ -17,4 +18,5 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                             \
                $ngx_addon_dir/ngx_event_resolver_test_module.c              \
                $ngx_addon_dir/ngx_dynamic_resolver_test_module.c            \
                $ngx_addon_dir/ngx_dynamic_conf_test_module.c                \
+               $ngx_addon_dir/ngx_http_dynamic_test_module.c                \
                "
