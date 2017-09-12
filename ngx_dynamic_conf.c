@@ -812,6 +812,7 @@ ngx_dynamic_conf_check_conf(void *data)
     ngx_dynamic_conf_conf_t    *dccf;
     ngx_fd_t                    fd;
     u_char                      md5key[NGX_MD5KEY_LEN];
+    NGX_START_TIMING
 
     dccf = data;
 
@@ -830,8 +831,8 @@ ngx_dynamic_conf_check_conf(void *data)
     }
 
     if (ngx_memcmp(dccf->md5key, md5key, NGX_MD5KEY_LEN) == 0) {
-        ngx_log_error(NGX_LOG_INFO, dccf->log, 0, "md5key not change",
-                &dccf->file);
+        ngx_log_debug1(NGX_LOG_DEBUG_CORE, dccf->log, 0,
+                "\"%V\" md5key not change", &dccf->file);
         goto done;
     }
 
@@ -851,6 +852,8 @@ done:
     ngx_close_file(fd);
 
     ngx_event_timer_add_timer(dccf->refresh, ngx_dynamic_conf_check_conf, dccf);
+
+    NGX_STOP_TIMING(dccf->log, "ngx_dynamic_conf_check_conf")
 }
 
 static ngx_int_t ngx_dynamic_conf_process_init(ngx_cycle_t *cycle)
@@ -858,6 +861,8 @@ static ngx_int_t ngx_dynamic_conf_process_init(ngx_cycle_t *cycle)
     ngx_dynamic_conf_conf_t    *dccf;
     ngx_fd_t                    fd;
     u_char                      md5key[NGX_MD5KEY_LEN];
+
+    NGX_START_TIMING
 
     dccf = (ngx_dynamic_conf_conf_t *) ngx_get_conf(cycle->conf_ctx,
                                                     ngx_dynamic_conf_module);
@@ -896,6 +901,8 @@ static ngx_int_t ngx_dynamic_conf_process_init(ngx_cycle_t *cycle)
 
     /* add dynamic conf parse timer */
     ngx_event_timer_add_timer(dccf->refresh, ngx_dynamic_conf_check_conf, dccf);
+
+    NGX_STOP_TIMING(dccf->log, "ngx_dynamic_conf_process_init")
 
     return NGX_OK;
 }
