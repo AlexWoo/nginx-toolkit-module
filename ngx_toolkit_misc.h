@@ -18,13 +18,14 @@ ngx_int_t ngx_md5_file(ngx_fd_t, u_char md5key[NGX_MD5KEY_LEN]);
 #ifdef NGX_DEBUG
 
 #define NGX_START_TIMING                                            \
-    struct timeval      start, end;                                 \
+    struct timeval      __start, __end;                             \
     ngx_gettimeofday(&start);
 
 #define NGX_STOP_TIMING(log, msg)                                   \
-    ngx_gettimeofday(&end);                                         \
+    ngx_gettimeofday(&__end);                                       \
     ngx_log_error(NGX_LOG_INFO, log, 0, msg " spend %ui us",        \
-        (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec));
+        (__end.tv_sec - __start.tv_sec) * 1000000                   \
+        + (__end.tv_usec - __start.tv_usec));
 
 #else
 
