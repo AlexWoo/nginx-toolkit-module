@@ -19,7 +19,7 @@ ngx_int_t ngx_md5_file(ngx_fd_t, u_char md5key[NGX_MD5KEY_LEN]);
 
 #define NGX_START_TIMING                                            \
     struct timeval      __start, __end;                             \
-    ngx_gettimeofday(&start);
+    ngx_gettimeofday(&__start);
 
 #define NGX_STOP_TIMING(log, msg)                                   \
     ngx_gettimeofday(&__end);                                       \

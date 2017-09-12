@@ -77,7 +77,7 @@ struct ngx_http_dynamic_location_tree_node_s {
 
 
 typedef struct {
-    /* array of the ngx_http_server_name_t, "server_name" directive */
+    /* array of the ngx_http_dynamic_server_name_t, "server_name" directive */
     ngx_array_t                         server_names;
 
     /* if serverid.len == 0, use domain as serverid*/
@@ -317,7 +317,7 @@ ngx_http_dynamic_core_create_srv_conf(ngx_conf_t *cf)
     }
 
     if (ngx_array_init(&hdcscf->server_names, cf->pool, 4,
-        sizeof(ngx_http_server_name_t)) != NGX_OK)
+        sizeof(ngx_http_dynamic_server_name_t)) != NGX_OK)
     {
         return NULL;
     }
@@ -1099,7 +1099,7 @@ ngx_http_dynamic_core_init_virtual_servers(ngx_conf_t *cf,
     hash.key = ngx_hash_key_lc;
     hash.max_size = hdcmcf->server_names_hash_max_size;
     hash.bucket_size = hdcmcf->server_names_hash_bucket_size;
-    hash.name = "dynamic_server_names_hash";
+    hash.name = "http_dynamic_server_names_hash";
     hash.pool = cf->pool;
 
     if (ha.keys.nelts) {
@@ -1184,10 +1184,13 @@ failed:
 
 static ngx_int_t
 ngx_http_dynamic_core_find_virtual_server(ngx_http_request_t *r,
-        ngx_str_t *server, ngx_http_dynamic_core_main_conf_t *hdcmcf,
+        ngx_http_dynamic_core_main_conf_t *hdcmcf,
         ngx_http_dynamic_core_srv_conf_t **hdcscfp)
 {
     ngx_http_dynamic_core_srv_conf_t       *hdcscf;
+    ngx_str_t                              *server;
+
+    server = &r->headers_in.server;
 
     hdcscf = ngx_hash_find_combined(&hdcmcf->names,
                                     ngx_hash_key(server->data, server->len),
@@ -1325,13 +1328,13 @@ static char *
 ngx_http_dynamic_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd,
         void *conf)
 {
-    ngx_http_dynamic_core_srv_conf_t       *hdscf;
+    ngx_http_dynamic_core_srv_conf_t       *hdcscf;
     u_char                                  ch;
     ngx_str_t                              *value;
     ngx_uint_t                              i;
     ngx_http_dynamic_server_name_t         *sn;
 
-    hdscf = conf;
+    hdcscf = conf;
 
     value = cf->args->elts;
 
@@ -1353,7 +1356,7 @@ ngx_http_dynamic_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd,
                                &value[i]);
         }
 
-        sn = ngx_array_push(&hdscf->server_names);
+        sn = ngx_array_push(&hdcscf->server_names);
         if (sn == NULL) {
             return NGX_CONF_ERROR;
         }
@@ -1361,7 +1364,7 @@ ngx_http_dynamic_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd,
 #if (NGX_PCRE)
         sn->regex = NULL;
 #endif
-        sn->server = hdscf;
+        sn->server = hdcscf;
 
         if (ngx_strcasecmp(value[i].data, (u_char *) "$hostname") == 0) {
             sn->name = cf->cycle->hostname;
@@ -1647,8 +1650,7 @@ ngx_http_get_module_srv_dconf(ngx_http_request_t *r, ngx_module_t *m)
         return NULL;
     }
 
-    rc = ngx_http_dynamic_core_find_virtual_server(r, &r->headers_in.server,
-                                                   hdcmcf, &hdcscf);
+    rc = ngx_http_dynamic_core_find_virtual_server(r, hdcmcf, &hdcscf);
     switch (rc) {
     case NGX_ERROR:
         return NULL;
