@@ -23,6 +23,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
                $ngx_addon_dir/ngx_dynamic_conf.c                \
                $ngx_addon_dir/ngx_http_dynamic.c                \
                $ngx_addon_dir/ngx_toolkit_misc.c                \
+               $ngx_addon_dir/ngx_map.c                         \
                "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
@@ -32,4 +33,5 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
                $ngx_addon_dir/ngx_dynamic_conf.h                \
                $ngx_addon_dir/ngx_http_dynamic.h                \
                $ngx_addon_dir/ngx_toolkit_misc.h                \
+               $ngx_addon_dir/ngx_map.h                         \
                "

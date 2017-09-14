@@ -14,15 +14,19 @@ Nginx event toolkit modules. It contains modules below, and will add more in the
 
 - [ngx-dynamic-resolver-module](doc/ngx-dynamic-resolver-module.md)
 
-	System will resolver domain in dynamic resolver every few seconds configured.
+	System will resolver domain in dynamic resolver every few seconds configured
 
-	The module will return addr whose domain is resolved in dynamic resolver, otherwise, the module will add domain into dynamic resolver, resolv domain by event resolver, and call callback when resolved.
+	The module will return addr whose domain is resolved in dynamic resolver, otherwise, the module will add domain into dynamic resolver, resolv domain by event resolver, and call callback when resolved
 
 - [ngx-dynamic-conf-module](doc/ngx-dynamic-conf-module.md)
 
-System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker.
+System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker
 
 Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
+
+- [ngx-map](doc/ngx-map.md)
+
+A map implement use ngx_rbtree
 
 ## TODO
 
