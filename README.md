@@ -28,6 +28,10 @@ Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
 
 A map implement use ngx_rbtree
 
+- [ngx-toolkit-misc](doc/ngx-toolkit-misc.md)
+
+Misc toolkit functions
+
 ## TODO
 
 next will merge nginx-multiport-module into it
