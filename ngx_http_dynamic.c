@@ -80,9 +80,6 @@ typedef struct {
     /* array of the ngx_http_dynamic_server_name_t, "server_name" directive */
     ngx_array_t                         server_names;
 
-    /* if serverid.len == 0, use domain as serverid*/
-    ngx_str_t                           serverid;
-
     ngx_http_dynamic_core_loc_conf_t   *hdclcf;
 
     void                              **srv_conf;
@@ -200,13 +197,6 @@ static ngx_command_t  ngx_http_dynamic_core_dcommands[] = {
       ngx_http_dynamic_core_server,
       0,
       0,
-      NULL },
-
-    { ngx_string("serverid"),
-      NGX_HTTP_SRV_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_str_slot,
-      0,
-      offsetof(ngx_http_dynamic_core_srv_conf_t, serverid),
       NULL },
 
     { ngx_string("server_name"),

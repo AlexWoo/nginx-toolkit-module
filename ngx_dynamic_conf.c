@@ -951,5 +951,9 @@ ngx_get_dconf(ngx_module_t *m)
     dccf = (ngx_dynamic_conf_conf_t *) ngx_get_conf(ngx_cycle->conf_ctx,
                                                     ngx_dynamic_conf_module);
 
+    if (dccf->conf[dccf->used] == 0) {  /* dynamic conf not configured */
+        return NULL;
+    }
+
     return dccf->conf[dccf->used]->module_conf[m->ctx_index];
 }

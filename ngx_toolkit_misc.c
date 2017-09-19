@@ -93,8 +93,8 @@ ngx_parse_request_url(ngx_request_url_t *request_url, ngx_str_t *url)
         request_url->port.data = port;
         request_url->port.len = host_last - port;
 
-        request_url->host.data = host;
-        request_url->host.len = host_last - host;
+        request_url->host_with_port.data = host;
+        request_url->host_with_port.len = host_last - host;
     }
 
     path = ++host_last;
