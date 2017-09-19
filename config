@@ -35,3 +35,5 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
                $ngx_addon_dir/ngx_toolkit_misc.h                \
                $ngx_addon_dir/ngx_map.h                         \
                "
+
+CFLAGS="$CFLAGS -I $ngx_addon_dir"

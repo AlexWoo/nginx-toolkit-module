@@ -1,8 +1,8 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-#include "../ngx_dynamic_conf.h"
-#include "../ngx_http_dynamic.h"
+#include "ngx_dynamic_conf.h"
+#include "ngx_http_dynamic.h"
 
 
 static char *ngx_http_dynamic_test(ngx_conf_t *cf, ngx_command_t *cmd,

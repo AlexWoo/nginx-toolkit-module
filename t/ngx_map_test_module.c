@@ -1,7 +1,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-#include "../ngx_map.h"
+#include "ngx_map.h"
 #include "ngx_test_macro.h"
 
 

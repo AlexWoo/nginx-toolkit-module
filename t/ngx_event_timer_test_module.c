@@ -1,7 +1,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
-#include "../ngx_event_timer_module.h"
+#include "ngx_event_timer_module.h"
 
 
 static char *ngx_event_timer_test(ngx_conf_t *cf, ngx_command_t *cmd,
