@@ -20,18 +20,18 @@ Nginx event toolkit modules. It contains modules below, and will add more in the
 
 - [ngx-dynamic-conf-module](doc/ngx-dynamic-conf-module.md)
 
-System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker
+	System will reload conf when nginx dynamic config file change. Developer can use this module to reload file without reload nginx worker
 
-Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
+	Now it support NGX\_CORE\_MODULE and NGX\_HTTP\_MODULE
 
 - [ngx-map](doc/ngx-map.md)
 
-A map implement use ngx_rbtree
+	A map implement use ngx\_rbtree
+
+- [ngx-rbuf](doc/ngx-rbuf.md)
+
+	A recycled chainbuf for nginx
 
 - [ngx-toolkit-misc](doc/ngx-toolkit-misc.md)
 
-Misc toolkit functions
-
-## TODO
-
-next will merge nginx-multiport-module into it
+	Misc toolkit functions

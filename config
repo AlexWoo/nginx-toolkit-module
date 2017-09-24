@@ -1,4 +1,4 @@
-ngx_addon_name=ngx_event_timer_module
+ngx_addon_name=ngx_toolkit_module
 
 
 CORE_MODULES="$CORE_MODULES                                     \
@@ -24,6 +24,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
                $ngx_addon_dir/ngx_http_dynamic.c                \
                $ngx_addon_dir/ngx_toolkit_misc.c                \
                $ngx_addon_dir/ngx_map.c                         \
+               $ngx_addon_dir/ngx_rbuf.c                        \
                "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
@@ -34,6 +35,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
                $ngx_addon_dir/ngx_http_dynamic.h                \
                $ngx_addon_dir/ngx_toolkit_misc.h                \
                $ngx_addon_dir/ngx_map.h                         \
+               $ngx_addon_dir/ngx_rbuf.h                        \
                "
 
 CFLAGS="$CFLAGS -I $ngx_addon_dir"
