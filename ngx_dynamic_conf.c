@@ -816,6 +816,10 @@ ngx_dynamic_conf_check_conf(void *data)
 
     dccf = data;
 
+    if (ngx_exiting) { /* avoid nginx reload worker hungup */
+        return;
+    }
+
     fd = ngx_open_file(dccf->file.data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
     if (fd == NGX_INVALID_FILE) {
         ngx_log_error(NGX_LOG_ERR, dccf->log, ngx_errno,

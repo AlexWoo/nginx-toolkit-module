@@ -284,6 +284,10 @@ ngx_dynamic_resolver_on_timer(void *data)
     ngx_dynamic_resolver_domain_t  *domain;
     ngx_uint_t                      i;
 
+    if (ngx_exiting) {
+        return;
+    }
+
     drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
 
     for (i = 0; i < drcf->domain_buckets; ++i) {
