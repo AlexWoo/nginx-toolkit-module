@@ -161,9 +161,9 @@ ngx_event_resolver_handler(ngx_resolver_ctx_t *ctx)
     erctx = ctx->data;
 
     if (ctx->state) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "event resolver, "
-                "%V could not be resolved (%i: %s)", &ctx->name, ctx->state,
-                ngx_resolver_strerror(ctx->state));
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                "event resolver, domain '%V' could not be resolved (%i: %s)",
+                &ctx->name, ctx->state, ngx_resolver_strerror(ctx->state));
         erctx->handler(erctx->data, NULL, 0);
 
         goto failed;
@@ -185,6 +185,9 @@ ngx_event_resolver_start_resolver(ngx_str_t *domain,
     ngx_resolver_ctx_t             *ctx, temp;
 
     ercf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_event_resolver_module);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0, "event resolver, "
+            "start resolv domain '%V'", domain);
 
     if (ercf->resolver == NULL) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "event resolver, "

@@ -144,20 +144,20 @@ ngx_dynamic_resolver_init_conf(ngx_cycle_t *cycle, void *conf)
 
 /* reuse for ngx_dynamic_resolver_ctx_t */
 static ngx_dynamic_resolver_ctx_t *
-ngx_dynamic_resolver_get_ctx()
+ngx_dynamic_resolver_get_ctx(ngx_cycle_t *cycle)
 {
     ngx_dynamic_resolver_conf_t    *drcf;
     ngx_dynamic_resolver_ctx_t     *ctx;
 
-    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    drcf = ngx_event_get_conf(cycle->conf_ctx, ngx_dynamic_resolver_module);
 
     ctx = drcf->free_ctx;
 
     if (ctx == NULL) {
-        ctx = ngx_pcalloc(ngx_cycle->pool, sizeof(ngx_dynamic_resolver_ctx_t));
+        ctx = ngx_pcalloc(cycle->pool, sizeof(ngx_dynamic_resolver_ctx_t));
 
         if (ctx == NULL) {
-            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "dynamic resolver, "
                     "alloc memory dynamic resolver ctx failed");
             return NULL;
         }
@@ -170,11 +170,12 @@ ngx_dynamic_resolver_get_ctx()
 }
 
 static void
-ngx_dynamic_resolver_put_ctx(ngx_dynamic_resolver_ctx_t *ctx)
+ngx_dynamic_resolver_put_ctx(ngx_dynamic_resolver_ctx_t *ctx,
+        ngx_cycle_t *cycle)
 {
     ngx_dynamic_resolver_conf_t    *drcf;
 
-    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    drcf = ngx_event_get_conf(cycle->conf_ctx, ngx_dynamic_resolver_module);
 
     ctx->next = drcf->free_ctx;
     drcf->free_ctx = ctx;
@@ -182,21 +183,21 @@ ngx_dynamic_resolver_put_ctx(ngx_dynamic_resolver_ctx_t *ctx)
 
 /* reuse for ngx_dynamic_resolver_domain_t */
 static ngx_dynamic_resolver_domain_t *
-ngx_dynamic_resolver_get_domain()
+ngx_dynamic_resolver_get_domain(ngx_cycle_t *cycle)
 {
     ngx_dynamic_resolver_conf_t    *drcf;
     ngx_dynamic_resolver_domain_t  *domain;
 
-    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    drcf = ngx_event_get_conf(cycle->conf_ctx, ngx_dynamic_resolver_module);
 
     domain = drcf->free_domain;
 
     if (domain == NULL) {
-        domain = ngx_pcalloc(ngx_cycle->pool,
+        domain = ngx_pcalloc(cycle->pool,
                              sizeof(ngx_dynamic_resolver_domain_t));
 
         if (domain == NULL) {
-            ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
+            ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "dynamic resolver, "
                     "alloc memory dynamic resolver domain failed");
             return NULL;
         }
@@ -209,11 +210,12 @@ ngx_dynamic_resolver_get_domain()
 }
 
 static void
-ngx_dynamic_resolver_put_domain(ngx_dynamic_resolver_domain_t *domain)
+ngx_dynamic_resolver_put_domain(ngx_dynamic_resolver_domain_t *domain,
+        ngx_cycle_t *cycle)
 {
     ngx_dynamic_resolver_conf_t    *drcf;
 
-    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    drcf = ngx_event_get_conf(cycle->conf_ctx, ngx_dynamic_resolver_module);
 
     domain->next = drcf->free_domain;
     drcf->free_domain = domain;
@@ -238,14 +240,14 @@ ngx_dynamic_resolver_on_result(void *data, ngx_resolver_addr_t *addrs,
 
     if (naddrs == 0) {
         ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-                "resolver failed");
+                "domain '%V' resolver failed", &domain->domain);
 
         while (domain->ctx) {
             ctx = domain->ctx;
             domain->ctx = ctx->next;
 
             ctx->h(ctx->data, NULL, 0);
-            ngx_dynamic_resolver_put_ctx(ctx);
+            ngx_dynamic_resolver_put_ctx(ctx, (ngx_cycle_t *) ngx_cycle);
         }
 
         return;
@@ -262,14 +264,15 @@ ngx_dynamic_resolver_on_result(void *data, ngx_resolver_addr_t *addrs,
         n = ngx_random() % domain->naddrs;
 
         while (domain->ctx) {
-            ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-                    "resolver successd");
+            ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                    "dynamic resolver, resolver '%V' successd",
+                    &domain->domain);
             ctx = domain->ctx;
             domain->ctx = ctx->next;
 
             ctx->h(ctx->data, &domain->addrs[n].sockaddr,
                    domain->addrs[n].socklen);
-            ngx_dynamic_resolver_put_ctx(ctx);
+            ngx_dynamic_resolver_put_ctx(ctx, (ngx_cycle_t *) ngx_cycle);
 
             ++n;
             n %= domain->naddrs;
@@ -289,8 +292,10 @@ ngx_dynamic_resolver_on_timer(void *data)
     for (i = 0; i < drcf->domain_buckets; ++i) {
         domain = drcf->resolver_hash[i];
         while (domain) {
-            ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-                "on timer start resolver %V", &domain->domain);
+            ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                    "dynamic resolver, on timer start resolver %V",
+                    &domain->domain);
+
             ngx_event_resolver_start_resolver(&domain->domain,
                     ngx_dynamic_resolver_on_result, domain);
             domain = domain->next;
@@ -311,31 +316,45 @@ ngx_dynamic_resolver_process_init(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
-    ngx_event_timer_add_timer(drcf->refresh_interval,
-            ngx_dynamic_resolver_on_timer, NULL);
+    ngx_event_timer_add_timer(0, ngx_dynamic_resolver_on_timer, NULL);
 
     return NGX_OK;
 }
 
 
 void
-ngx_dynamic_resolver_del_domain(ngx_str_t *domain)
+ngx_dynamic_resolver_add_domain(ngx_str_t *domain, ngx_cycle_t *cycle)
 {
     ngx_dynamic_resolver_conf_t    *drcf;
-    ngx_dynamic_resolver_domain_t **pd, *d;
-    ngx_dynamic_resolver_ctx_t     *ctx;
+    ngx_dynamic_resolver_domain_t  *d;
     ngx_uint_t                      idx;
+    in_addr_t                       addr;
     u_char                          temp[MAX_DOMAIN_LEN];
 
-    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    if (domain == NULL) {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
+                "dynamic resolver add, domain is NULL");
+        return;
+    }
+
+    addr = ngx_inet_addr(domain->data, domain->len);
+    /* addr is IP address */
+    if (addr != INADDR_NONE) {
+        ngx_log_debug0(NGX_LOG_DEBUG_CORE, cycle->log, 0,
+                "dynamic resolver add, domain is IP address");
+
+        return;
+    }
+
+    drcf = ngx_event_get_conf(cycle->conf_ctx, ngx_dynamic_resolver_module);
     if (drcf->refresh_interval == 0) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
-                "dynamic resolver closed when del domain");
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "dynamic resolver add, "
+                "dynamic resolver closed when add domain");
         return;
     }
 
     if (domain->len > MAX_DOMAIN_LEN) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "dynamic resolver add, "
                 "domain length(%z) is too long", domain->len);
         return;
     }
@@ -344,7 +363,78 @@ ngx_dynamic_resolver_del_domain(ngx_str_t *domain)
     idx = ngx_hash_strlow(temp, domain->data, domain->len);
     idx %= drcf->domain_buckets;
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
+    ngx_log_debug2(NGX_LOG_DEBUG_CORE, cycle->log, 0, "dynamic resolver add, "
+            "prepare add %V in %d slot", domain, idx);
+
+    for (d = drcf->resolver_hash[idx]; d; d = d->next) {
+
+        if (d->domain.len == domain->len &&
+            ngx_memcmp(d->domain.data, temp, domain->len) == 0)
+        {
+            ngx_log_debug1(NGX_LOG_DEBUG_CORE, cycle->log, 0,
+                    "dynamic resolver add, %V is in dynamic resolv hash table",
+                    domain);
+            return;
+        }
+    }
+
+    d = ngx_dynamic_resolver_get_domain(cycle);
+    if (d == NULL) {
+        return;
+    }
+
+    /* add domain in dynamic resolver */
+    d->next = drcf->resolver_hash[idx];
+    drcf->resolver_hash[idx] = d;
+
+    ngx_memcpy(d->domain_cstr, temp, MAX_DOMAIN_LEN);
+    d->domain.data = d->domain_cstr;
+    d->domain.len = domain->len;
+}
+
+void
+ngx_dynamic_resolver_del_domain(ngx_str_t *domain)
+{
+    ngx_dynamic_resolver_conf_t    *drcf;
+    ngx_dynamic_resolver_domain_t **pd, *d;
+    ngx_dynamic_resolver_ctx_t     *ctx;
+    ngx_uint_t                      idx;
+    in_addr_t                       addr;
+    u_char                          temp[MAX_DOMAIN_LEN];
+
+    if (domain == NULL) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                "dynamic resolver del, domain is NULL");
+        return;
+    }
+
+    addr = ngx_inet_addr(domain->data, domain->len);
+    /* addr is IP address */
+    if (addr != INADDR_NONE) {
+        ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                "dynamic resolver del, domain is IP address");
+
+        return;
+    }
+
+    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    if (drcf->refresh_interval == 0) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver del, "
+                "dynamic resolver closed when del domain");
+        return;
+    }
+
+    if (domain->len > MAX_DOMAIN_LEN) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver del, "
+                "domain length(%z) is too long", domain->len);
+        return;
+    }
+
+    ngx_memzero(temp, MAX_DOMAIN_LEN);
+    idx = ngx_hash_strlow(temp, domain->data, domain->len);
+    idx %= drcf->domain_buckets;
+
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver del, "
             "prepare del %V in %d slot", domain, idx);
 
     for (pd = &drcf->resolver_hash[idx]; *pd; pd = &(*pd)->next) {
@@ -360,16 +450,16 @@ ngx_dynamic_resolver_del_domain(ngx_str_t *domain)
                 d->ctx = ctx->next;
 
                 ctx->h(ctx->data, NULL, 0);
-                ngx_dynamic_resolver_put_ctx(ctx);
+                ngx_dynamic_resolver_put_ctx(ctx, (ngx_cycle_t *) ngx_cycle);
             }
 
-            ngx_dynamic_resolver_put_domain(d);
+            ngx_dynamic_resolver_put_domain(d, (ngx_cycle_t *) ngx_cycle);
 
             return;
         }
     }
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver del, "
                   "%V is not in dynamic resolv hash table", domain);
 }
 
@@ -388,23 +478,23 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
     u_char                          temp[MAX_DOMAIN_LEN];
 
     if (domain == NULL) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
-                "domain is NULL");
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                "dynamic resolver async, domain is NULL");
         return;
     }
 
     addr = ngx_inet_addr(domain->data, domain->len);
     /* addr is IP address */
     if (addr != INADDR_NONE) {
+        ngx_memzero(&sa, sizeof(struct sockaddr));
         sin = (struct sockaddr_in *) &sa;
 
         len = sizeof(struct sockaddr_in);
-        ngx_memzero(sin, sizeof(struct sockaddr_in));
         sin->sin_family = AF_INET;
         sin->sin_addr.s_addr = addr;
 
-        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-                "domain is IP address");
+        ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                "dynamic resolver async, domain is IP address");
 
         h(data, &sa, len);
 
@@ -413,13 +503,13 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
 
     drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
     if (drcf->refresh_interval == 0) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver async, "
                 "dynamic resolver closed when start resolver");
         goto failed;
     }
 
     if (domain->len > MAX_DOMAIN_LEN) {
-        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver, "
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver async, "
                 "domain length(%z) is too long", domain->len);
         goto failed;
     }
@@ -440,7 +530,7 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
     }
 
     if (d == NULL) { /* not found */
-        d = ngx_dynamic_resolver_get_domain();
+        d = ngx_dynamic_resolver_get_domain((ngx_cycle_t *) ngx_cycle);
         if (d == NULL) {
             goto failed;
         }
@@ -458,13 +548,14 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
     if (d->naddrs == 0) {
 
         /* add call back in resolver list */
-        ctx = ngx_dynamic_resolver_get_ctx();
+        ctx = ngx_dynamic_resolver_get_ctx((ngx_cycle_t *) ngx_cycle);
         if (ctx == NULL) {
             goto failed;
         }
 
-        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-                "domain is not resolved");
+        ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                "dynamic resolver async, domain '%V' is not resolved",
+                &d->domain);
         ctx->h = h;
         ctx->data = data;
 
@@ -477,8 +568,9 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
         return;
     }
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver, "
-            "domain is resolved, call directly");
+    ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+            "dynamic resolver async, domain '%V' is resolved, call directly",
+            &d->domain);
 
     /* call callback */
     n = ngx_random() % d->naddrs;
@@ -489,4 +581,79 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
 failed:
 
     h(data, NULL, 0);
+}
+
+socklen_t
+ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa)
+{
+    ngx_dynamic_resolver_conf_t    *drcf;
+    ngx_dynamic_resolver_domain_t  *d;
+    ngx_uint_t                      idx, n;
+    struct sockaddr_in             *sin;
+    in_addr_t                       addr;
+    socklen_t                       len;
+    u_char                          temp[MAX_DOMAIN_LEN];
+
+    if (domain == NULL) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
+                "dynamic resolver sync, domain is NULL");
+        return 0;
+    }
+
+    addr = ngx_inet_addr(domain->data, domain->len);
+    /* addr is IP address */
+    if (addr != INADDR_NONE) {
+        ngx_memzero(sa, sizeof(struct sockaddr));
+        sin = (struct sockaddr_in *) sa;
+
+        len = sizeof(struct sockaddr_in);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = addr;
+
+        ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
+                "dynamic resolver sync, domain is IP address");
+
+        return len;
+    }
+
+    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+    if (drcf->refresh_interval == 0) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver sync, "
+                "dynamic resolver closed when start resolver");
+        return 0;
+    }
+
+    if (domain->len > MAX_DOMAIN_LEN) {
+        ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "dynamic resolver sync, "
+                "domain length(%z) is too long", domain->len);
+        return 0;
+    }
+
+    ngx_memzero(temp, MAX_DOMAIN_LEN);
+    idx = ngx_hash_strlow(temp, domain->data, domain->len);
+    idx %= drcf->domain_buckets;
+
+    d = drcf->resolver_hash[idx];
+    while (d) {
+        if (d->domain.len == domain->len &&
+            ngx_memcmp(d->domain.data, temp, domain->len) == 0)
+        {
+            if (d->naddrs == 0) {
+                ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                        "dynamic resolver sync, domain '%V' is not resolved",
+                        &d->domain);
+                return 0;
+            }
+
+            n = ngx_random() % d->naddrs;
+            ngx_memcpy(sa, &d->addrs[n].sockaddr, d->addrs[n].socklen);
+
+            return d->addrs[n].socklen;
+        }
+    }
+
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver sync, "
+            "domain '%V' is not in dynamic resolver table", domain);
+
+    return 0;
 }

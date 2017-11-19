@@ -66,6 +66,33 @@ h's protype is:
 	- sa     : sock address get
 	- socklen: sock address len, 0 for get none address
 
+**gethostbyname**
+
+	socklen_t ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa);
+
+- return value:
+
+	- socklen for successd
+	- 0 for failed
+
+- paras:
+
+	- domain: domain for query
+	- sa     : sock address get
+
+**add domain**
+
+	void ngx_dynamic_resolver_add_domain(ngx_str_t *domain);
+
+- return value:
+
+	- None
+
+- paras:
+
+	- domain: domain for query
+
+
 **del domain**
 
 	void ngx_dynamic_resolver_del_domain(ngx_str_t *domain);
@@ -110,12 +137,16 @@ Configure:
 			...
 
 			location /dynamic_resolver_test/ {
-				dynamic_resolver_test;
+				dynamic_resolver_test  192.168.84.4  www.test1.com;
 			}
 		}
 	}
 
 Test:
+
+- sync resolver
+
+		curl -v 'http://127.0.0.1/dynamic_resolver_test/resolver?domain=www.test1.com&sync=1'
 
 - start resolver
 
