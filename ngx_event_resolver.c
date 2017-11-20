@@ -24,6 +24,9 @@ typedef struct {
     ngx_msec_t                      resolver_timeout;
     ngx_resolver_t                 *resolver;
     ngx_event_resolver_ctx_t       *free_ctx;
+
+    ngx_uint_t                      nalloc;
+    ngx_uint_t                      nfree;
 } ngx_event_resolver_conf_t;
 
 
@@ -134,9 +137,11 @@ ngx_event_resolver_get_ctx()
     ctx = ercf->free_ctx;
     if (ctx == NULL) {
         ctx = ngx_pcalloc(ngx_cycle->pool, sizeof(ngx_event_resolver_ctx_t));
+        ++ercf->nalloc;
     } else {
         ercf->free_ctx = ctx->next;
         ctx->next = NULL;
+        --ercf->nfree;
     }
 
     return ctx;
@@ -151,6 +156,7 @@ ngx_event_resolver_put_ctx(ngx_event_resolver_ctx_t *ctx)
 
     ctx->next = ercf->free_ctx;
     ercf->free_ctx = ctx;
+    ++ercf->nfree;
 }
 
 static void
@@ -238,4 +244,38 @@ failed:
         ngx_resolve_name_done(ctx);
         ngx_event_resolver_put_ctx(erctx);
     }
+}
+
+ngx_chain_t *
+ngx_event_resolver_state(ngx_http_request_t *r)
+{
+	ngx_event_resolver_conf_t  *ercf;
+    ngx_chain_t                *cl;
+    ngx_buf_t                  *b;
+    size_t                      len;
+
+    ercf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_event_resolver_module);
+
+    len = sizeof("##########event resolver state##########\n") - 1
+        + sizeof("ngx_event_resolver alloc: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_event_resolver free: \n") - 1 + NGX_OFF_T_LEN;
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return NULL;
+    }
+    cl->next = NULL;
+
+    b = ngx_create_temp_buf(r->pool, len);
+    if (b == NULL) {
+        return NULL;
+    }
+    cl->buf = b;
+
+    b->last = ngx_snprintf(b->last, len,
+            "##########event resolver state##########\n"
+            "ngx_event_resolver alloc: %ui\nngx_event_resolver free: %ui\n",
+            ercf->nalloc, ercf->nfree);
+
+    return cl;
 }

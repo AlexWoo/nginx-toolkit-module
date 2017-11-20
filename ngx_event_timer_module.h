@@ -10,6 +10,8 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_event.h>
+#include <ngx_http.h>
+
 
 typedef void (* ngx_timer_handler_pt)(void *data);
 
@@ -29,5 +31,12 @@ ngx_int_t ngx_event_timer_add_timer(ngx_msec_t tv,
  *      timerid: value return in ngx_timer_add_timer
  */
 void ngx_event_timer_del_timer(ngx_uint_t timerid);
+
+/*
+ * paras:
+ *      r: http request to query status of event timer
+ */
+ngx_chain_t *ngx_event_timer_state(ngx_http_request_t *r);
+
 
 #endif

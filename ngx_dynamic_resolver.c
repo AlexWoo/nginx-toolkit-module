@@ -58,6 +58,11 @@ typedef struct {
 
     ngx_dynamic_resolver_ctx_t         *free_ctx;
     ngx_dynamic_resolver_domain_t      *free_domain;
+
+    ngx_uint_t                          nalloc_ctx;
+    ngx_uint_t                          nfree_ctx;
+    ngx_uint_t                          nalloc_domain;
+    ngx_uint_t                          nfree_domain;
 } ngx_dynamic_resolver_conf_t;
 
 
@@ -161,9 +166,11 @@ ngx_dynamic_resolver_get_ctx(ngx_cycle_t *cycle)
                     "alloc memory dynamic resolver ctx failed");
             return NULL;
         }
+        ++drcf->nalloc_ctx;
     } else {
         drcf->free_ctx = drcf->free_ctx->next;
         ngx_memzero(ctx, sizeof(ngx_dynamic_resolver_ctx_t));
+        --drcf->nfree_ctx;
     }
 
     return ctx;
@@ -179,6 +186,7 @@ ngx_dynamic_resolver_put_ctx(ngx_dynamic_resolver_ctx_t *ctx,
 
     ctx->next = drcf->free_ctx;
     drcf->free_ctx = ctx;
+    ++drcf->nfree_ctx;
 }
 
 /* reuse for ngx_dynamic_resolver_domain_t */
@@ -201,9 +209,11 @@ ngx_dynamic_resolver_get_domain(ngx_cycle_t *cycle)
                     "alloc memory dynamic resolver domain failed");
             return NULL;
         }
+        ++drcf->nalloc_domain;
     } else {
         drcf->free_domain = drcf->free_domain->next;
         ngx_memzero(domain, sizeof(ngx_dynamic_resolver_domain_t));
+        --drcf->nfree_domain;
     }
 
     return domain;
@@ -219,6 +229,7 @@ ngx_dynamic_resolver_put_domain(ngx_dynamic_resolver_domain_t *domain,
 
     domain->next = drcf->free_domain;
     drcf->free_domain = domain;
+    ++drcf->nfree_domain;
 }
 
 
@@ -660,4 +671,44 @@ ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa)
             "domain '%V' is not in dynamic resolver table", domain);
 
     return 0;
+}
+
+ngx_chain_t *
+ngx_dynamic_resolver_state(ngx_http_request_t *r)
+{
+	ngx_dynamic_resolver_conf_t *drcf;
+    ngx_chain_t                *cl;
+    ngx_buf_t                  *b;
+    size_t                      len;
+
+    drcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_dynamic_resolver_module);
+
+    len = sizeof("##########dynamic resolver state##########\n") - 1
+        + sizeof("ngx_dynamic_resolver alloc ctx: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_dynamic_resolver free ctx: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_dynamic_resolver alloc domain: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_dynamic_resolver free domain: \n") - 1 + NGX_OFF_T_LEN;
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return NULL;
+    }
+    cl->next = NULL;
+
+    b = ngx_create_temp_buf(r->pool, len);
+    if (b == NULL) {
+        return NULL;
+    }
+    cl->buf = b;
+
+    b->last = ngx_snprintf(b->last, len,
+            "##########dynamic resolver state##########\n"
+            "ngx_dynamic_resolver alloc ctx: %ui\n"
+            "ngx_dynamic_resolver free ctx: %ui\n"
+            "ngx_dynamic_resolver alloc domain: %ui\n"
+            "ngx_dynamic_resolver free domain: %ui\n",
+            drcf->nalloc_ctx, drcf->nfree_ctx,
+            drcf->nalloc_domain, drcf->nfree_domain);
+
+    return cl;
 }

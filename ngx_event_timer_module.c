@@ -235,3 +235,37 @@ ngx_event_timer_del_timer(ngx_uint_t timerid)
     ngx_event_del_timer(&ctx->event);
     ngx_event_timer_free_timer(ctx);
 }
+
+ngx_chain_t *
+ngx_event_timer_state(ngx_http_request_t *r)
+{
+    ngx_event_timer_conf_t     *etcf;
+    ngx_chain_t                *cl;
+    ngx_buf_t                  *b;
+    size_t                      len;
+
+    etcf = ngx_event_get_conf(ngx_cycle->conf_ctx, ngx_event_timer_module);
+
+    len = sizeof("##########event timer state##########\n") - 1
+        + sizeof("ngx_event_timer alloc: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_event_timer free: \n") - 1 + NGX_OFF_T_LEN;
+
+    cl = ngx_alloc_chain_link(r->pool);
+    if (cl == NULL) {
+        return NULL;
+    }
+    cl->next = NULL;
+
+    b = ngx_create_temp_buf(r->pool, len);
+    if (b == NULL) {
+        return NULL;
+    }
+    cl->buf = b;
+
+    b->last = ngx_snprintf(b->last, len,
+            "##########event timer state##########\n"
+            "ngx_event_timer alloc: %ui\nngx_event_timer free: %ui\n",
+            etcf->timer_n, etcf->free_timer_n);
+
+    return cl;
+}

@@ -9,6 +9,7 @@
 
 #include <ngx_config.h>
 #include <ngx_core.h>
+#include <ngx_http.h>
 
 
 /*
@@ -63,6 +64,12 @@ void ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
  */
 socklen_t ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain,
         struct sockaddr *sa);
+
+/*
+ * paras:
+ *      r: http request to query status of dynamic resolver
+ */
+ngx_chain_t *ngx_dynamic_resolver_state(ngx_http_request_t *r);
 
 
 #endif
