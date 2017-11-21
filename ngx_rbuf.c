@@ -220,11 +220,11 @@ ngx_rbuf_state(ngx_http_request_t *r)
     size_t                      len;
 
     len = sizeof("##########ngx rbuf state##########\n") - 1
-        + sizeof("ngx_rbuf_nalloc_node: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf_nalloc_buf: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf_nfree_buf: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf_nalloc_chain: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf_nalloc_chain: \n") - 1 + NGX_OFF_T_LEN;
+        + sizeof("ngx_rbuf nalloc node: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_rbuf nalloc buf: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_rbuf nfree buf: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_rbuf nalloc chain: \n") - 1 + NGX_OFF_T_LEN
+        + sizeof("ngx_rbuf nfree chain: \n") - 1 + NGX_OFF_T_LEN;
 
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
@@ -239,9 +239,9 @@ ngx_rbuf_state(ngx_http_request_t *r)
     cl->buf = b;
 
     b->last = ngx_snprintf(b->last, len,
-            "##########ngx rbuf state##########\nngx_rbuf_nalloc_node: %ui\n"
-            "ngx_rbuf_nalloc_buf: %ui\nngx_rbuf_nfree_buf: %ui\n"
-            "ngx_rbuf_nalloc_chain: %ui\nngx_rbuf_nalloc_chain: %ui\n",
+            "##########ngx rbuf state##########\nngx_rbuf nalloc node: %ui\n"
+            "ngx_rbuf nalloc buf: %ui\nngx_rbuf nfree buf: %ui\n"
+            "ngx_rbuf nalloc chain: %ui\nngx_rbuf nfree chain: %ui\n",
             ngx_rbuf_nalloc_node, ngx_rbuf_nalloc_buf, ngx_rbuf_nfree_buf,
             ngx_rbuf_nalloc_chain, ngx_rbuf_nfree_chain);
 
