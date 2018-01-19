@@ -29,6 +29,12 @@ void ngx_put_chainbuf(ngx_chain_t *cl);
 
 /*
  * paras:
+ *      cl: nginx chain return by ngx_rtmp_shared_get_chainbuf
+ */
+void ngx_put_chainbufs(ngx_chain_t *cl);
+
+/*
+ * paras:
  *      r: http request to query status of rbuf
  */
 ngx_chain_t *ngx_rbuf_state(ngx_http_request_t *r);

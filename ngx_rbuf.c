@@ -211,6 +211,18 @@ ngx_put_chainbuf(ngx_chain_t *cl)
     ++ngx_rbuf_nfree_chain;
 }
 
+void
+ngx_put_chainbufs(ngx_chain_t *cl)
+{
+    ngx_chain_t                *l;
+
+    l = cl;
+    while (l) {
+        ngx_put_chainbuf(l);
+        l = cl->next;
+        cl = l;
+    }
+}
 
 ngx_chain_t *
 ngx_rbuf_state(ngx_http_request_t *r)
