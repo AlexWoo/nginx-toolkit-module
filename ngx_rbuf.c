@@ -218,9 +218,9 @@ ngx_put_chainbufs(ngx_chain_t *cl)
 
     l = cl;
     while (l) {
+        cl = l->next;
         ngx_put_chainbuf(l);
-        l = cl->next;
-        cl = l;
+        l = cl;
     }
 }
 
