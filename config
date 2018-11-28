@@ -25,6 +25,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
                $ngx_addon_dir/ngx_toolkit_misc.c                \
                $ngx_addon_dir/ngx_map.c                         \
                $ngx_addon_dir/ngx_rbuf.c                        \
+               $ngx_addon_dir/ngx_poold.c                       \
                "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
@@ -36,6 +37,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
                $ngx_addon_dir/ngx_toolkit_misc.h                \
                $ngx_addon_dir/ngx_map.h                         \
                $ngx_addon_dir/ngx_rbuf.h                        \
+               $ngx_addon_dir/ngx_poold.h                       \
                "
 
 CFLAGS="$CFLAGS -I $ngx_addon_dir"
