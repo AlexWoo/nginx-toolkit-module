@@ -58,6 +58,13 @@ ngx_module_t  ngx_map_test_module = {
     ngx_memzero(&n, sizeof(ngx_map_node_t));                    \
     n.raw_key = (intptr_t) &k;
 
+#define MAP_NODE_PRINT_KEY_STR(n)                               \
+    {                                                           \
+        ngx_str_t      *s = (ngx_str_t *) (n)->raw_key;         \
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,      \
+                "!!!!!!!!!!!!!!!!%V", s);                       \
+    }
+
 static ngx_int_t
 ngx_map_test_handler(ngx_http_request_t *r)
 {
@@ -100,6 +107,93 @@ ngx_map_test_handler(ngx_http_request_t *r)
     ngx_map_insert(&map, &n11, 0);
 
     NGX_TEST_INIT
+
+    ngx_map_node_t     *n;
+    n = ngx_map_begin(&map);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n1 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n2 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n3 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n4 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n5 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n6 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n7 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n8 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n9 == n)
+
+    n = ngx_map_next(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n10 == n)
+
+    n = ngx_map_next(n);
+    NGX_TEST_ISOK(NULL == n)
+
+    n = ngx_map_rbegin(&map);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n10 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n9 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n8 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n7 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n6 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n5 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n4 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n3 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n2 == n)
+
+    n = ngx_map_prev(n);
+    MAP_NODE_PRINT_KEY_STR(n)
+    NGX_TEST_ISOK(&n1 == n)
+
+    n = ngx_map_prev(n);
+    NGX_TEST_ISOK(NULL == n)
 
     static ngx_str_t kk1 = ngx_string("k100");
     NGX_TEST_ISOK(NULL == ngx_map_find(&map, (intptr_t) &kk1))

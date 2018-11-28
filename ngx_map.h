@@ -63,6 +63,44 @@ void ngx_map_init(ngx_map_t *map, ngx_map_hash_pt hash, ngx_cmp_pt cmp);
 
 /*
  * return value:
+ *      if map is empty return 1, else return 0
+ */
+#define ngx_map_empty(map) (map->rbtree.root == map->rbtree.sentinel)
+
+/*
+ * return value:
+ *      the mininum key map node, if map is empty, return NULL
+ * paras:
+ *      map: map for operate
+ */
+ngx_map_node_t *ngx_map_begin(ngx_map_t *map);
+
+/*
+ * return value:
+ *      the maximum key map node, if map is empty, return NULL
+ * paras:
+ *      map: map for operate
+ */
+ngx_map_node_t *ngx_map_rbegin(ngx_map_t *map);
+
+/*
+ * return value:
+ *      the next bigger key map node, if none, return NULL
+ * paras:
+ *      n  : current node
+ */
+ngx_map_node_t *ngx_map_next(ngx_map_node_t *n);
+
+/*
+ * return value:
+ *      the next smaller key map node, if none, return NULL
+ * paras:
+ *      n  : current node
+ */
+ngx_map_node_t *ngx_map_prev(ngx_map_node_t *n);
+
+/*
+ * return value:
  *      None
  * paras:
  *      map    : map for operate

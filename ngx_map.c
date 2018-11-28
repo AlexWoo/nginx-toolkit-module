@@ -61,6 +61,132 @@ ngx_map_init(ngx_map_t *map, ngx_map_hash_pt hash, ngx_cmp_pt cmp)
     map->cmp = cmp;
 }
 
+ngx_map_node_t *
+ngx_map_begin(ngx_map_t *map)
+{
+    ngx_rbtree_node_t          *p;
+
+    if (ngx_map_empty(map)) {
+        return NULL;
+    }
+
+    p = map->rbtree.root;
+
+    for (;;) {
+        if (p->left == map->rbtree.sentinel) {
+            break;
+        }
+
+        p = p->left;
+    }
+
+    return (ngx_map_node_t *) p;
+}
+
+ngx_map_node_t *
+ngx_map_rbegin(ngx_map_t *map)
+{
+    ngx_rbtree_node_t          *p;
+
+    if (ngx_map_empty(map)) {
+        return NULL;
+    }
+
+    p = map->rbtree.root;
+
+    for (;;) {
+        if (p->right == map->rbtree.sentinel) {
+            break;
+        }
+
+        p = p->right;
+    }
+
+    return (ngx_map_node_t *) p;
+}
+
+ngx_map_node_t *
+ngx_map_next(ngx_map_node_t *n)
+{
+    ngx_map_t                  *map;
+    ngx_rbtree_node_t          *p, *top;
+
+    map = n->map;
+    p = &n->rn;
+    top = NULL;
+
+    if (p->right != map->rbtree.sentinel) {
+        // current node has right subtree
+        top = p->right;
+    } else {
+        for (;;) {
+            if (p == map->rbtree.root) {
+                return NULL;
+            }
+
+            if (p->parent->left == p) {
+                return (ngx_map_node_t *) p->parent;
+            }
+
+            // p->parent->right == p
+            p = p->parent;
+        }
+    }
+
+    // get the mininum node
+    p = top;
+    for (;;) {
+        if (p->left == map->rbtree.sentinel) {
+            break;
+        }
+
+        p = p->left;
+    }
+
+    return (ngx_map_node_t *) p;
+}
+
+ngx_map_node_t *
+ngx_map_prev(ngx_map_node_t *n)
+{
+    ngx_map_t                  *map;
+    ngx_rbtree_node_t          *p, *top;
+
+    map = n->map;
+    p = &n->rn;
+    top = NULL;
+
+    if (p->left != map->rbtree.sentinel) {
+        // current node has left subtree
+        top = p->left;
+    } else {
+        for (;;) {
+            if (p == map->rbtree.root) {
+                return NULL;
+            }
+
+            if (p->parent->right == p) {
+                return (ngx_map_node_t *) p->parent;
+            }
+
+            // p->parent->left == p
+            p = p->parent;
+        }
+    }
+
+    // get the maximum node
+    p = top;
+    for (;;) {
+        if (p->right == map->rbtree.sentinel) {
+            break;
+        }
+
+        p = p->right;
+    }
+
+    return (ngx_map_node_t *) p;
+}
+
 void
 ngx_map_insert(ngx_map_t *map, ngx_map_node_t *node, ngx_flag_t covered)
 {
@@ -96,7 +222,7 @@ ngx_map_find(ngx_map_t *map, intptr_t key)
     ngx_rbtree_key_t            k;
     intptr_t                   *key_temp;
 
-    if (map->rbtree.root == map->rbtree.sentinel) { /* map is empty */
+    if (ngx_map_empty(map)) {
         return NULL;
     }
 
@@ -110,7 +236,7 @@ ngx_map_find(ngx_map_t *map, intptr_t key)
             p = p->right;
         } else {
             key_temp = (intptr_t *)((char *) p
-                                        + offsetof(ngx_map_node_t, raw_key));
+                     + offsetof(ngx_map_node_t, raw_key));
 
             switch (map->cmp(key, *key_temp)) {
             case -1:
