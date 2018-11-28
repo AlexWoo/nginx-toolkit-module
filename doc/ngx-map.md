@@ -63,6 +63,36 @@ User also can use own hash and cmp func with protype below:
 	 */
 	typedef int (* ngx_cmp_pt)(intptr_t key1, intptr_t key2);
 
+**ngx\_map\_empty**
+
+	#define ngx_map_empty(map) (map->rbtree.root == map->rbtree.sentinel)
+
+If map is empty, return 1, else, return false
+
+**ngx\_map\_begin**
+
+	ngx_map_node_t *ngx_map_begin(ngx_map_t *map)
+
+Return the mininum key node of map
+
+**ngx\_map\_rbegin**
+
+	ngx_map_node_t *ngx_map_rbegin(ngx_map_t *map)
+
+Return the maxinum key node of map
+
+**ngx\_map\_next**
+
+	ngx_map_node_t *ngx_map_next(ngx_map_node_t *n)
+
+Return the next node of n, if n is the maximum key node in map, return NULL
+
+**ngx\_map\_prev**
+
+	ngx_map_node_t *ngx_map_prev(ngx_map_node_t *n)
+
+Return the previous node of n, if n is the mininum key node in map, return NULL
+
 **ngx\_map\_insert**
 
 	void ngx_map_insert(ngx_map_t *map, ngx_map_node_t *node, ngx_flag_t covered)
