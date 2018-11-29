@@ -14,6 +14,7 @@ EVENT_MODULES="$EVENT_MODULES                                   \
 
 HTTP_MODULES="$HTTP_MODULES                                     \
              ngx_http_dynamic_core_module                       \
+             ngx_http_trace_module                              \
              "
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
@@ -26,6 +27,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
                $ngx_addon_dir/ngx_map.c                         \
                $ngx_addon_dir/ngx_rbuf.c                        \
                $ngx_addon_dir/ngx_poold.c                       \
+               $ngx_addon_dir/ngx_http_trace_module.c           \
                "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
