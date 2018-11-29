@@ -109,6 +109,61 @@ ngx_http_trace_genid(u_char *id) {
 }
 
 
+static u_char *
+ngx_http_trace_log_error(ngx_log_t *log, u_char *buf, size_t len)
+{
+    u_char                         *p;
+    ngx_http_request_t             *r;
+    ngx_http_log_ctx_t             *ctx;
+    ngx_http_trace_ctx_t           *tctx;
+    ngx_str_t                       traceid, currentid, parentid;
+
+    if (log->action) {
+        p = ngx_snprintf(buf, len, " while %s", log->action);
+        len -= p - buf;
+        buf = p;
+    }
+
+    ctx = log->data;
+
+    p = ngx_snprintf(buf, len, ", client: %V", &ctx->connection->addr_text);
+    len -= p - buf;
+    buf = p;
+
+    r = ctx->request;
+
+    if (r) {
+        p = r->log_handler(r, ctx->current_request, p, len);
+        len -= p - buf;
+        buf = p;
+
+    } else {
+        p = ngx_snprintf(p, len, ", server: %V",
+                         &ctx->connection->listening->addr_text);
+        len -= p - buf;
+        buf = p;
+    }
+
+    tctx = ngx_http_get_module_ctx(r, ngx_http_trace_module);
+    if (tctx) {
+        traceid.data = tctx->traceid;
+        traceid.len = sizeof(tctx->traceid);
+
+        currentid.data = tctx->cid;
+        currentid.len = sizeof(tctx->cid);
+
+        parentid.data = tctx->pid;
+        parentid.len = sizeof(tctx->pid);
+
+        p = ngx_snprintf(p, len, ", [NGINX-TRACE] traceid: %V, currentid: %V, "
+            "parentid: %V [NGINX-TRACE-END]",
+            &traceid, &currentid, &parentid);
+    }
+
+    return p;
+}
+
+
 // First request without X-NTM-Traceid X-NTM-Currentid or X-NTM-Parentid
 // Need to gen these ids and set X-NTM headers in main request
 static ngx_int_t
@@ -205,6 +260,9 @@ ngx_http_trace_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
     ngx_http_set_ctx(r, ctx, ngx_http_trace_module);
+
+    // traceid currentid parentid log into nginx error log
+    r->connection->log->handler = ngx_http_trace_log_error;
 
     // Get X-NTM-Debug
     header.data = (u_char *) "http_x_ntm_debug";
