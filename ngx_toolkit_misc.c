@@ -203,3 +203,21 @@ ngx_md5_file(ngx_fd_t fd, u_char md5key[NGX_MD5KEY_LEN])
 
     return NGX_OK;
 }
+
+ngx_int_t
+ngx_copy_str(ngx_pool_t *pool, ngx_str_t *dst, ngx_str_t *src)
+{
+    if (src->len == 0) {
+        return NGX_OK;
+    }
+
+    dst->len = src->len;
+    dst->data = ngx_palloc(pool, src->len);
+    if (dst->data == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(dst->data, src->data, src->len);
+
+    return NGX_OK;
+}
