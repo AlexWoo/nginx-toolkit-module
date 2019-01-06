@@ -9,6 +9,7 @@
 #include "ngx_event_timer_module.h"
 #include "ngx_event_resolver.h"
 #include "ngx_dynamic_resolver.h"
+#include "ngx_toolkit_misc.h"
 
 
 static ngx_int_t ngx_dynamic_resolver_process_init(ngx_cycle_t *cycle);
@@ -343,20 +344,21 @@ ngx_dynamic_resolver_add_domain(ngx_str_t *domain, ngx_cycle_t *cycle)
     ngx_dynamic_resolver_conf_t    *drcf;
     ngx_dynamic_resolver_domain_t  *d;
     ngx_uint_t                      idx;
-    in_addr_t                       addr;
+    struct sockaddr                 sa;
+    socklen_t                       len;
     u_char                          temp[MAX_DOMAIN_LEN];
 
-    if (domain == NULL) {
+    if (domain == NULL || domain->len == 0) {
         ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
                 "dynamic resolver add, domain is NULL");
         return;
     }
 
-    addr = ngx_inet_addr(domain->data, domain->len);
+    len = ngx_sock_pton(&sa, domain->data, domain->len);
     /* addr is IP address */
-    if (addr != INADDR_NONE) {
-        ngx_log_debug0(NGX_LOG_DEBUG_CORE, cycle->log, 0,
-                "dynamic resolver add, domain is IP address");
+    if (len) {
+        ngx_log_error(NGX_LOG_DEBUG_CORE, cycle->log, 0,
+                "dynamic resolver add, domain is ipv4/ipv6/unix address");
 
         return;
     }
@@ -414,20 +416,21 @@ ngx_dynamic_resolver_del_domain(ngx_str_t *domain)
     ngx_dynamic_resolver_domain_t **pd, *d;
     ngx_dynamic_resolver_ctx_t     *ctx;
     ngx_uint_t                      idx;
-    in_addr_t                       addr;
+    struct sockaddr                 sa;
+    socklen_t                       len;
     u_char                          temp[MAX_DOMAIN_LEN];
 
-    if (domain == NULL) {
+    if (domain == NULL || domain->len == 0) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                 "dynamic resolver del, domain is NULL");
         return;
     }
 
-    addr = ngx_inet_addr(domain->data, domain->len);
+    len = ngx_sock_pton(&sa, domain->data, domain->len);
     /* addr is IP address */
-    if (addr != INADDR_NONE) {
+    if (len) {
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
-                "dynamic resolver del, domain is IP address");
+                "dynamic resolver del, domain is ipv4/ipv6/unix address");
 
         return;
     }
@@ -487,29 +490,20 @@ ngx_dynamic_resolver_start_resolver(ngx_str_t *domain,
     ngx_dynamic_resolver_ctx_t     *ctx;
     ngx_uint_t                      idx, n;
     struct sockaddr                 sa;
-    struct sockaddr_in             *sin;
-    in_addr_t                       addr;
     socklen_t                       len;
     u_char                          temp[MAX_DOMAIN_LEN];
 
-    if (domain == NULL) {
+    if (domain == NULL || domain->len == 0) {
         ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,
                 "dynamic resolver async, domain is NULL");
         return;
     }
 
-    addr = ngx_inet_addr(domain->data, domain->len);
-    /* addr is IP address */
-    if (addr != INADDR_NONE) {
-        ngx_memzero(&sa, sizeof(struct sockaddr));
-        sin = (struct sockaddr_in *) &sa;
-
-        len = sizeof(struct sockaddr_in);
-        sin->sin_family = AF_INET;
-        sin->sin_addr.s_addr = addr;
-
+    len = ngx_sock_pton(&sa, domain->data, domain->len);
+    /* addr is ipv4/ipv6/unix address */
+    if (len) {
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
-                "dynamic resolver async, domain is IP address");
+                "dynamic resolver async, domain is ipv4/ipv6/unix address");
 
         h(data, &sa, len);
 
@@ -604,8 +598,6 @@ ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa)
     ngx_dynamic_resolver_conf_t    *drcf;
     ngx_dynamic_resolver_domain_t  *d;
     ngx_uint_t                      idx, n;
-    struct sockaddr_in             *sin;
-    in_addr_t                       addr;
     socklen_t                       len;
     u_char                          temp[MAX_DOMAIN_LEN];
 
@@ -615,18 +607,11 @@ ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa)
         return 0;
     }
 
-    addr = ngx_inet_addr(domain->data, domain->len);
-    /* addr is IP address */
-    if (addr != INADDR_NONE) {
-        ngx_memzero(sa, sizeof(struct sockaddr));
-        sin = (struct sockaddr_in *) sa;
-
-        len = sizeof(struct sockaddr_in);
-        sin->sin_family = AF_INET;
-        sin->sin_addr.s_addr = addr;
-
+    len = ngx_sock_pton(sa, domain->data, domain->len);
+    /* addr is ipv4/ipv6/unix address */
+    if (len) {
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
-                "dynamic resolver sync, domain is IP address");
+                "dynamic resolver sync, domain is ipv4/ipv6/unix address");
 
         return len;
     }

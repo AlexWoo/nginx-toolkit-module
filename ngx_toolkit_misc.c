@@ -24,6 +24,152 @@ ngx_scheme_port_t ngx_sheme_port[] = {
 #define FILEBUFSIZE     8192
 
 
+socklen_t
+ngx_sock_pton_unix(struct sockaddr *sa, u_char *text, size_t len)
+{
+#if NGX_HAVE_UNIX_DOMAIN
+    u_char                     *path;
+    struct sockaddr_un         *saun;
+
+    // skip 'unix:'
+    path = text + 5;
+    len -= 5;
+
+    if (len == 0) {
+        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                "no path in the unix domain");
+        return 0;
+    }
+
+    ++len; // sun_path need '\0' as end
+    if (len > sizeof(saun->sun_path)) {
+        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                "too long path in the unix domain socket");
+        return 0;
+    }
+
+    saun = (struct sockaddr_un *) sa;
+    saun->sun_family = AF_UNIX;
+    (void) ngx_cpystrn((u_char *) saun->sun_path, path, len);
+
+    return sizeof(struct sockaddr_un);
+
+#else
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+            "the unix domain sockets are not supported on this platform");
+
+    return 0;
+#endif
+}
+
+socklen_t
+ngx_sock_pton_inet6(struct sockaddr *sa, u_char *text, size_t len)
+{
+#if NGX_HAVE_INET6
+    struct in6_addr             inaddr6;
+    struct sockaddr_in6        *sin6;
+    u_char                     *p, *last;
+    ngx_int_t                   port;
+    size_t                      alen, plen;
+
+    last = text + len;
+    p = ngx_strlchr(text, last, ']');
+
+    if (p == NULL || p == last - 1) {
+        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                "not a ipv6 address format");
+        return 0;
+    }
+
+    ++text;
+    alen = p - text;
+
+    /*
+     * prevent MSVC8 warning:
+     *    potentially uninitialized local variable 'inaddr6' used
+     */
+    ngx_memzero(&inaddr6, sizeof(struct in6_addr));
+
+    if (ngx_inet6_addr(text, alen, inaddr6.s6_addr) != NGX_OK) {
+        // not ipv6 address
+        return 0;
+    }
+
+    sa->sa_family = AF_INET6;
+
+    sin6 = (struct sockaddr_in6 *) sa;
+    ngx_memcpy(sin6->sin6_addr.s6_addr, inaddr6.s6_addr, 16);
+
+    ++p;
+    if (*p == ':') { // has port
+        ++p;
+        plen = last - p;
+
+        port = ngx_atoi(p, plen);
+        if (port < 0 || port > 65535) {
+            ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                    "invalid port: %i", port);
+            return 0;
+        }
+
+        ngx_inet_set_port(sa, (in_port_t) port);
+    }
+
+    return sizeof(struct sockaddr_in6);
+
+#else
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+            "the INET6 sockets are not supported on this platform");
+
+    return 0;
+#endif
+}
+
+socklen_t
+ngx_sock_pton_inet(struct sockaddr *sa, u_char *text, size_t len)
+{
+    in_addr_t                   inaddr;
+    struct sockaddr_in         *sin;
+    u_char                     *p, *last;
+    ngx_int_t                   port;
+    size_t                      alen, plen;
+
+    last = text + len;
+    p = ngx_strlchr(text, last, ':');
+    alen = len;
+
+    if (p != NULL) { // have port
+        alen = p - text;
+    }
+
+    inaddr = ngx_inet_addr(text, alen);
+    if (inaddr == INADDR_NONE) {
+        // not ipv4 address
+        return 0;
+    }
+
+    sa->sa_family = AF_INET;
+
+    sin = (struct sockaddr_in *) sa;
+    sin->sin_addr.s_addr = inaddr;
+
+    if (p != NULL) { // has port
+        ++p;
+        plen = last - p;
+
+        port = ngx_atoi(p, plen);
+        if (port < 0 || port > 65535) {
+            ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                    "invalid port: %i", port);
+            return 0;
+        }
+
+        ngx_inet_set_port(sa, (in_port_t) port);
+    }
+
+    return sizeof(struct sockaddr_in);
+}
+
 ngx_int_t
 ngx_parse_request_url(ngx_request_url_t *request_url, ngx_str_t *url)
 {
@@ -220,4 +366,18 @@ ngx_copy_str(ngx_pool_t *pool, ngx_str_t *dst, ngx_str_t *src)
     ngx_memcpy(dst->data, src->data, src->len);
 
     return NGX_OK;
+}
+
+socklen_t
+ngx_sock_pton(struct sockaddr *sa, u_char *text, size_t len)
+{
+    if (len >= 5 && ngx_strncasecmp(text, (u_char *) "unix:", 5) == 0) {
+        return ngx_sock_pton_unix(sa, text, len);
+    }
+
+    if (len && text[0] == '[') {
+        return ngx_sock_pton_inet6(sa, text, len);
+    }
+
+    return ngx_sock_pton_inet(sa, text, len);
 }
