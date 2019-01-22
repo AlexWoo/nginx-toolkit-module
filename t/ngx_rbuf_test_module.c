@@ -96,7 +96,7 @@ ngx_rbuf_test_handler(ngx_http_request_t *r)
     r->headers_out.status = NGX_HTTP_OK;
     ngx_http_send_header(r);
 
-    out = ngx_rbuf_state(r);
+    out = ngx_rbuf_state(r, 1);
     out->buf->last_buf = 1;
 
     return ngx_http_output_filter(r, out);

@@ -12,6 +12,10 @@
 #include <ngx_http.h>
 
 
+ngx_chain_t *ngx_get_chainbuf_debug(size_t size, ngx_flag_t alloc_rbuf,
+        char *file, int line);
+void ngx_put_chainbuf_debug(ngx_chain_t *cl, char *file, int len);
+
 /*
  * paras:
  *      size: buffer size for allocate
@@ -19,24 +23,37 @@
  * return:
  *      nginx chain
  */
-ngx_chain_t *ngx_get_chainbuf(size_t size, ngx_flag_t alloc_rbuf);
+#define ngx_get_chainbuf(size, alloc_rbuf)                          \
+    ngx_get_chainbuf_debug(size, alloc_rbuf, __FILE__, __LINE__);
 
 /*
  * paras:
  *      cl: nginx chain return by ngx_rtmp_shared_get_chainbuf
  */
-void ngx_put_chainbuf(ngx_chain_t *cl);
+#define ngx_put_chainbuf(cl)                                        \
+    ngx_put_chainbuf_debug(cl, __FILE__, __LINE__);
+
 
 /*
  * paras:
  *      cl: nginx chain return by ngx_rtmp_shared_get_chainbuf
  */
-void ngx_put_chainbufs(ngx_chain_t *cl);
+#define ngx_put_chainbufs(cl)                                       \
+{                                                                   \
+    ngx_chain_t                *l;                                  \
+                                                                    \
+    l = cl;                                                         \
+    while (l) {                                                     \
+        cl = l->next;                                               \
+        ngx_put_chainbuf_debug(l, __FILE__, __LINE__);              \
+        l = cl;                                                     \
+    }                                                               \
+}
 
 /*
  * paras:
  *      r: http request to query status of rbuf
  */
-ngx_chain_t *ngx_rbuf_state(ngx_http_request_t *r);
+ngx_chain_t *ngx_rbuf_state(ngx_http_request_t *r, unsigned detail);
 
 #endif
