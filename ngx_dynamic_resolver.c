@@ -650,6 +650,8 @@ ngx_dynamic_resolver_gethostbyname(ngx_str_t *domain, struct sockaddr *sa)
 
             return d->addrs[n].socklen;
         }
+
+        d = d->next;
     }
 
     ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "dynamic resolver sync, "
