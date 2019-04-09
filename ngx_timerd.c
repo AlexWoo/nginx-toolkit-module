@@ -111,7 +111,14 @@ ngx_timerd_wrap(ngx_event_t *ev)
         return;
     }
 
+    ngx_map_delete(&ngx_timerd_map, (intptr_t) uev);
+
+    uev->timer_set = 0;
+    uev->timedout = 1;
+
     uev->handler(uev);
+
+    ngx_timerd_put_node(node);
 }
 
 
