@@ -12,8 +12,8 @@
 #include <ngx_http.h>
 
 
-#define NGX_ADD_TIMER(ev, timer, data, fpoff)                           \
-    ngx_add_timer_debug(ev, timer, data, fpoff, __FILE__, __LINE__)
+#define NGX_ADD_TIMER(ev, timer, fpoff)                                 \
+    ngx_add_timer_debug(ev, timer, fpoff, __FILE__, __LINE__)
 
 #define NGX_DEL_TIMER(ev, footprint)                                    \
     ngx_del_timer_debug(ev, footprint, __FILE__, __LINE__)
@@ -35,15 +35,14 @@ ngx_uint_t ngx_timerd_footprint();
  * paras:
  *      ev:    nginx event for timer
  *      timer: timer interval for triggering timer
- *      data:  event data
- *      fpoff: footprint offset in data
+ *      fpoff: footprint offset in event data
  *      file:  use __FILE__ for recording file
  *      line:  use __LINE__ for recording line
  * return:
  *      pool for successd, NULL for failed
  */
-void ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, void *data,
-        off_t fpoff, char *file, int line);
+void ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, off_t fpoff,
+        char *file, int line);
 
 
 /*

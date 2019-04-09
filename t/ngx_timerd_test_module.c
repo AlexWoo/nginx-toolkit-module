@@ -86,8 +86,7 @@ ngx_timerd_test_handler(ngx_http_request_t *r)
     test->footprint = ngx_timerd_footprint();
     test->ev.data = test;
     test->ev.handler = ngx_timerd_test_timer;
-    NGX_ADD_TIMER(&test->ev, 5000, test,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "!!!!!!!!!!normal timer trigger: %p %ui", test, test->footprint);
@@ -103,8 +102,7 @@ ngx_timerd_test_handler(ngx_http_request_t *r)
     test1->footprint = ngx_timerd_footprint();
     test1->ev.data = test1;
     test1->ev.handler = ngx_timerd_test_timer;
-    NGX_ADD_TIMER(&test1->ev, 5000, test1,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test1->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "!!!!!!!!!!delete timer twice: %p %ui", test1, test1->footprint);
@@ -122,8 +120,7 @@ ngx_timerd_test_handler(ngx_http_request_t *r)
     test2->footprint = ngx_timerd_footprint();
     test2->ev.data = test2;
     test2->ev.handler = ngx_timerd_test_timer;
-    NGX_ADD_TIMER(&test2->ev, 5000, test2,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test2->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "!!!!!!!!!!timer trigger after event destroy: %p %ui",
@@ -143,8 +140,7 @@ ngx_timerd_test_handler(ngx_http_request_t *r)
     test3->footprint = ngx_timerd_footprint();
     test3->ev.data = test3;
     test3->ev.handler = ngx_timerd_test_timer;
-    NGX_ADD_TIMER(&test3->ev, 5000, test3,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test3->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "!!!!!!!!!!delete timer after event destroy: %p %ui",
@@ -167,16 +163,14 @@ ngx_timerd_test_handler(ngx_http_request_t *r)
     test4->footprint = ngx_timerd_footprint();
     test4->ev.data = test4;
     test4->ev.handler = ngx_timerd_test_timer;
-    NGX_ADD_TIMER(&test4->ev, 5000, test4,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test4->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
             "!!!!!!!!!!add timer after event destroy: %p %ui",
             test4, test4->footprint);
     test4->footprint = ngx_timerd_footprint();
 
-    NGX_ADD_TIMER(&test4->ev, 5000, test4,
-                  offsetof(ngx_timer_test_data_t, footprint));
+    NGX_ADD_TIMER(&test4->ev, 5000, offsetof(ngx_timer_test_data_t, footprint));
 
     ngx_destroy_pool(pool4);
 

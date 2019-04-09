@@ -123,7 +123,7 @@ ngx_timerd_footprint()
 
 
 void
-ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, void *data, off_t fpoff,
+ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, off_t fpoff,
         char *file, int line)
 {
     ngx_timerd_node_t          *node;
@@ -134,7 +134,7 @@ ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, void *data, off_t fpoff,
         ngx_timerd_init();
     }
 
-    fp = (ngx_uint_t *) ((char *) data + fpoff);
+    fp = (ngx_uint_t *) ((char *) ev->data + fpoff);
 
     m = ngx_map_find(&ngx_timerd_map, (intptr_t) ev);
     if (m == NULL) { // first add
@@ -164,6 +164,7 @@ ngx_add_timer_debug(ngx_event_t *ev, ngx_msec_t timer, void *data, off_t fpoff,
         }
     }
 
+    ev->timer_set = 1;
     ngx_add_timer(&node->ev, timer);
 }
 
@@ -192,6 +193,7 @@ ngx_del_timer_debug(ngx_event_t *ev, ngx_uint_t footprint, char *file, int line)
     ngx_map_delete(&ngx_timerd_map, (intptr_t) ev);
 
     if (node->ev.timer_set) {
+        ev->timer_set = 0;
         ngx_del_timer(&node->ev);
     }
 
