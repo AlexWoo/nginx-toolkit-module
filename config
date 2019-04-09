@@ -27,6 +27,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS                                 \
                $ngx_addon_dir/ngx_map.c                         \
                $ngx_addon_dir/ngx_rbuf.c                        \
                $ngx_addon_dir/ngx_poold.c                       \
+               $ngx_addon_dir/ngx_timerd.c                      \
                $ngx_addon_dir/ngx_http_trace_module.c           \
                "
 
@@ -40,6 +41,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS                                 \
                $ngx_addon_dir/ngx_map.h                         \
                $ngx_addon_dir/ngx_rbuf.h                        \
                $ngx_addon_dir/ngx_poold.h                       \
+               $ngx_addon_dir/ngx_timerd.h                      \
                "
 
 CFLAGS="$CFLAGS -I $ngx_addon_dir"
