@@ -12,11 +12,30 @@
 #include <ngx_http.h>
 
 
+#if (NGX_DEBUG)
+
 #define NGX_CREATE_POOL(size, log)                          \
     ngx_create_pool_debug(size, log, __FILE__, __LINE__)
 
+#else
+
+#define NGX_CREATE_POOL(size, log)                          \
+    ngx_create_pool(size, log)
+
+#endif
+
+
+#if (NGX_DEBUG)
+
 #define NGX_DESTROY_POOL(pool)                              \
     ngx_destroy_pool_debug(pool, __FILE__, __LINE__)
+
+#else
+
+#define NGX_DESTROY_POOL(pool)                              \
+    ngx_destroy_pool(pool)
+
+#endif
 
 
 /*

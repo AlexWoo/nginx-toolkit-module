@@ -218,14 +218,19 @@ ngx_timerd_state(ngx_http_request_t *r, unsigned detail)
 {
     ngx_chain_t                *cl;
     ngx_buf_t                  *b;
+    size_t                      len;
+#if (NGX_DEBUG)
     ngx_map_node_t             *node;
     ngx_timerd_node_t          *pn;
-    size_t                      len, len1;
+    size_t                      len1;
     ngx_uint_t                  n;
+#endif
 
     len = sizeof("##########ngx debug pool##########\n") - 1
         + sizeof("ngx_timerd nalloc node: \n") - 1 + NGX_OFF_T_LEN
         + sizeof("ngx_timerd nfree node: \n") - 1 + NGX_OFF_T_LEN;
+
+#if (NGX_DEBUG)
 
     /* node for create pool */
     if (detail) {
@@ -234,6 +239,8 @@ ngx_timerd_state(ngx_http_request_t *r, unsigned detail)
         len1 = 4 + 256 + 1 + NGX_OFF_T_LEN + 1;
         len += len1 * n;
     }
+
+#endif
 
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
@@ -252,6 +259,8 @@ ngx_timerd_state(ngx_http_request_t *r, unsigned detail)
             "ngx_timerd nalloc node: %ui\nngx_timerd nfree node: %ui\n",
             ngx_timerd_nalloc, ngx_timerd_nfree);
 
+#if (NGX_DEBUG)
+
     if (detail) {
         for (node = ngx_map_begin(&ngx_timerd_map); node;
                 node = ngx_map_next(node))
@@ -262,6 +271,8 @@ ngx_timerd_state(ngx_http_request_t *r, unsigned detail)
                     pn->file, pn->line);
         }
     }
+
+#endif
 
     return cl;
 }

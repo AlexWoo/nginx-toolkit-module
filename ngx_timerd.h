@@ -12,12 +12,30 @@
 #include <ngx_http.h>
 
 
+#if (NGX_DEBUG)
+
 #define NGX_ADD_TIMER(ev, timer, fpoff)                                 \
     ngx_add_timer_debug(ev, timer, fpoff, __FILE__, __LINE__)
+
+#else
+
+#define NGX_ADD_TIMER(ev, timer, fpoff)                                 \
+    ngx_add_timer(ev, timer)
+
+#endif
+
+
+#if (NGX_DEBUG)
 
 #define NGX_DEL_TIMER(ev, footprint)                                    \
     ngx_del_timer_debug(ev, footprint, __FILE__, __LINE__)
 
+#else
+
+#define NGX_DEL_TIMER(ev, footprint)                                    \
+    ngx_del_timer(ev)
+
+#endif
 
 /*
  * generate a new footprint
