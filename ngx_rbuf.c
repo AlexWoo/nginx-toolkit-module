@@ -192,11 +192,15 @@ ngx_get_chainbuf_debug(size_t size, ngx_flag_t alloc_rbuf, char *file, int line)
     }
     cl->buf->memory = 1;
 
+#if (NGX_DEBUG)
+
     // record chainbuf in using map
     cb->file = file;
     cb->line = line;
     cb->node.raw_key = (intptr_t) cl;
     ngx_map_insert(&ngx_rbuf_using, &cb->node, 0);
+
+#endif
 
     return cl;
 }
@@ -223,6 +227,8 @@ ngx_put_chainbuf_debug(ngx_chain_t *cl, char *file, int line)
     ngx_rbuf_free_chain = cl;
     ++ngx_rbuf_nfree_chain;
 
+#if (NGX_DEBUG)
+
     // delete chainbuf from using map
     if (ngx_map_find(&ngx_rbuf_using, (intptr_t) cl) == NULL) {
         ngx_log_error(NGX_LOG_EMERG, ngx_cycle->log, 0,
@@ -230,6 +236,8 @@ ngx_put_chainbuf_debug(ngx_chain_t *cl, char *file, int line)
         return;
     }
     ngx_map_delete(&ngx_rbuf_using, (intptr_t) cl);
+
+#endif
 }
 
 ngx_chain_t *
@@ -237,10 +245,13 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
 {
     ngx_chain_t                *cl;
     ngx_buf_t                  *b;
-    size_t                      len, len1;
+    size_t                      len;
+#if (NGX_DEBUG)
+    size_t                      len1;
     ngx_uint_t                  n;
     ngx_chainbuf_t             *cb;
     ngx_map_node_t             *node;
+#endif
 
     len = sizeof("##########ngx rbuf state##########\n") - 1
         + sizeof("ngx_rbuf nalloc node: \n") - 1 + NGX_OFF_T_LEN
@@ -249,12 +260,16 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
         + sizeof("ngx_rbuf nalloc chain: \n") - 1 + NGX_OFF_T_LEN
         + sizeof("ngx_rbuf nfree chain: \n") - 1 + NGX_OFF_T_LEN;
 
+#if (NGX_DEBUG)
+
     if (detail) {
         n = ngx_rbuf_nalloc_chain - ngx_rbuf_nfree_chain;
         /* "    file:line\n" */
         len1 = 4 + 256 + 1 + NGX_OFF_T_LEN + 1;
         len += len1 * n;
     }
+
+#endif
 
     cl = ngx_alloc_chain_link(r->pool);
     if (cl == NULL) {
@@ -275,6 +290,8 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
             ngx_rbuf_nalloc_node, ngx_rbuf_nalloc_buf, ngx_rbuf_nfree_buf,
             ngx_rbuf_nalloc_chain, ngx_rbuf_nfree_chain);
 
+#if (NGX_DEBUG)
+
     if (detail) {
         for (node = ngx_map_begin(&ngx_rbuf_using); node;
                 node = ngx_map_next(node))
@@ -285,6 +302,8 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
                     cb->file, cb->line);
         }
     }
+
+#endif
 
     return cl;
 }
