@@ -12,42 +12,33 @@
 static ngx_pool_t              *ngx_rbuf_pool;
 
 static ngx_map_t                ngx_rbuf_map;
-static ngx_chain_t             *ngx_rbuf_free_chain;
-
 static ngx_uint_t               ngx_rbuf_nalloc_node;
-
-static ngx_uint_t               ngx_rbuf_nalloc_buf;
-static ngx_uint_t               ngx_rbuf_nfree_buf;
 
 static ngx_uint_t               ngx_rbuf_nalloc_chain;
 static ngx_uint_t               ngx_rbuf_nfree_chain;
 
 static ngx_map_t                ngx_rbuf_using;
 
-#define ngx_rbuf_buf(b)                                             \
-    (ngx_rbuf_t *) ((u_char *) (b) - offsetof(ngx_rbuf_t, buf))
-
-typedef struct ngx_rbuf_s   ngx_rbuf_t;
-
-struct ngx_rbuf_s {
-    size_t                      size;
-    ngx_rbuf_t                 *next;
-    u_char                      buf[];
-};
 
 typedef struct {
     ngx_map_node_t              node;
-    ngx_rbuf_t                 *rbuf;
-} ngx_rbuf_node_t;
+    ngx_chain_t                *free;
+} ngx_chainbuf_node_t;
 
 typedef struct {
     ngx_chain_t                 cl;
     ngx_buf_t                   buf;
-    unsigned                    alloc;
+
+#if (NGX_DEBUG)
 
     ngx_map_node_t              node;
     char                       *file;
     int                         line;
+
+#endif
+
+    size_t                      size;
+    u_char                      alloc[];
 } ngx_chainbuf_t;
 
 
@@ -60,102 +51,22 @@ ngx_rbuf_init()
     }
 
     ngx_map_init(&ngx_rbuf_map, ngx_map_hash_uint, ngx_cmp_uint);
-    ngx_map_init(&ngx_rbuf_using, ngx_map_hash_uint, ngx_cmp_uint);
-
     ngx_rbuf_nalloc_node = 0;
-    ngx_rbuf_nalloc_buf = 0;
-    ngx_rbuf_nfree_buf = 0;
+
     ngx_rbuf_nalloc_chain = 0;
     ngx_rbuf_nfree_chain = 0;
 
+    ngx_map_init(&ngx_rbuf_using, ngx_map_hash_uint, ngx_cmp_uint);
+
     return NGX_OK;
-}
-
-
-static ngx_rbuf_t *
-ngx_rbuf_get_buf(size_t key)
-{
-    ngx_rbuf_node_t            *rn;
-    ngx_map_node_t             *node;
-    ngx_rbuf_t                 *rb;
-
-    node = ngx_map_find(&ngx_rbuf_map, key);
-    if (node == NULL) { /* new key */
-        rn = ngx_pcalloc(ngx_rbuf_pool, sizeof(ngx_rbuf_node_t));
-        if (rn == NULL) {
-            return NULL;
-        }
-
-        node = &rn->node;
-        node->raw_key = key;
-        ngx_map_insert(&ngx_rbuf_map, node, 0);
-
-        ++ngx_rbuf_nalloc_node;
-    } else {
-        rn = (ngx_rbuf_node_t *) node;
-    }
-
-    rb = rn->rbuf;
-    if (rb == NULL) {
-        rb = ngx_pcalloc(ngx_rbuf_pool, sizeof(ngx_rbuf_t) + key);
-        if (rb == NULL) {
-            return NULL;
-        }
-        rb->size = key;
-
-        ++ngx_rbuf_nalloc_buf;
-    } else {
-        rn->rbuf = rb->next;
-        rb->next = NULL;
-
-        --ngx_rbuf_nfree_buf;
-    }
-
-    return rb;
-}
-
-static void
-ngx_rbuf_put_buf(ngx_rbuf_t *rb)
-{
-    ngx_rbuf_node_t            *rn;
-    ngx_map_node_t             *node;
-
-    node = ngx_map_find(&ngx_rbuf_map, rb->size);
-    if (node == NULL) {
-        return;
-    }
-
-    rn = (ngx_rbuf_node_t *) node;
-    rb->next = rn->rbuf;
-    rn->rbuf = rb;
-
-    ++ngx_rbuf_nfree_buf;
-}
-
-
-static u_char *
-ngx_rbuf_alloc(size_t size)
-{
-    ngx_rbuf_t                 *rb;
-
-    rb = ngx_rbuf_get_buf(size);
-
-    return rb->buf;
-}
-
-static void
-ngx_rbuf_free(u_char *rb)
-{
-    ngx_rbuf_t                 *rbuf;
-
-    rbuf = ngx_rbuf_buf(rb);
-    ngx_rbuf_put_buf(rbuf);
 }
 
 
 ngx_chain_t *
 ngx_get_chainbuf_debug(size_t size, ngx_flag_t alloc_rbuf, char *file, int line)
 {
+    ngx_chainbuf_node_t        *cn;
+    ngx_map_node_t             *node;
     ngx_chainbuf_t             *cb;
     ngx_chain_t                *cl;
 
@@ -163,34 +74,45 @@ ngx_get_chainbuf_debug(size_t size, ngx_flag_t alloc_rbuf, char *file, int line)
         ngx_rbuf_init();
     }
 
-    cl = ngx_rbuf_free_chain;
+    node = ngx_map_find(&ngx_rbuf_map, size);
+    if (node == NULL) { /* new size */
+        cn = ngx_pcalloc(ngx_rbuf_pool, sizeof(ngx_chainbuf_node_t));
+        if (cn == NULL) {
+            return NULL;
+        }
+
+        node = &cn->node;
+        node->raw_key = size;
+        ngx_map_insert(&ngx_rbuf_map, node, 0);
+
+        ++ngx_rbuf_nalloc_node;
+    } else {
+        cn = (ngx_chainbuf_node_t *) node;
+    }
+
+    cl = cn->free;
     if (cl) {
-        ngx_rbuf_free_chain = cl->next;
+        cn->free = cl->next;
         cl->next = NULL;
         cb = (ngx_chainbuf_t *) cl;
 
         --ngx_rbuf_nfree_chain;
     } else {
-        cb = ngx_pcalloc(ngx_rbuf_pool, sizeof(ngx_chainbuf_t));
+        cb = ngx_pcalloc(ngx_rbuf_pool, sizeof(ngx_chainbuf_t) + size);
         if (cb == NULL) {
             return NULL;
         }
 
         cl = &cb->cl;
         cl->buf = &cb->buf;
+        cb->size = size;
 
         ++ngx_rbuf_nalloc_chain;
     }
 
-    if (alloc_rbuf) {
-        cl->buf->last = cl->buf->pos = cl->buf->start = ngx_rbuf_alloc(size);
-        cl->buf->end = cl->buf->start + size;
-        cb->alloc = 1;
-    } else {
-        cl->buf->pos = cl->buf->last = cl->buf->start = cl->buf->end = NULL;
-        cb->alloc = 0;
-    }
-    cl->buf->memory = 1;
+    cb->buf.last = cb->buf.pos = cb->buf.start = cb->alloc;
+    cb->buf.end = cb->alloc + size;
+    cb->buf.memory = 1;
 
 #if (NGX_DEBUG)
 
@@ -208,7 +130,10 @@ ngx_get_chainbuf_debug(size_t size, ngx_flag_t alloc_rbuf, char *file, int line)
 void
 ngx_put_chainbuf_debug(ngx_chain_t *cl, char *file, int line)
 {
+    ngx_chainbuf_node_t        *cn;
+    ngx_map_node_t             *node;
     ngx_chainbuf_t             *cb;
+
 
     if (ngx_rbuf_pool == NULL) {
         return;
@@ -219,12 +144,15 @@ ngx_put_chainbuf_debug(ngx_chain_t *cl, char *file, int line)
     }
 
     cb = (ngx_chainbuf_t *) cl;
-
-    if (cb->alloc) {
-        ngx_rbuf_free(cl->buf->start);
+    node = ngx_map_find(&ngx_rbuf_map, cb->size);
+    if (node == NULL) {
+        return;
     }
-    cl->next = ngx_rbuf_free_chain;
-    ngx_rbuf_free_chain = cl;
+
+    cn = (ngx_chainbuf_node_t *) node;
+    cl->next = cn->free;
+    cn->free = cl;
+
     ++ngx_rbuf_nfree_chain;
 
 #if (NGX_DEBUG)
@@ -255,8 +183,6 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
 
     len = sizeof("##########ngx rbuf state##########\n") - 1
         + sizeof("ngx_rbuf nalloc node: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf nalloc buf: \n") - 1 + NGX_OFF_T_LEN
-        + sizeof("ngx_rbuf nfree buf: \n") - 1 + NGX_OFF_T_LEN
         + sizeof("ngx_rbuf nalloc chain: \n") - 1 + NGX_OFF_T_LEN
         + sizeof("ngx_rbuf nfree chain: \n") - 1 + NGX_OFF_T_LEN;
 
@@ -285,10 +211,8 @@ ngx_rbuf_state(ngx_http_request_t *r, unsigned detail)
 
     b->last = ngx_snprintf(b->last, len,
             "##########ngx rbuf state##########\nngx_rbuf nalloc node: %ui\n"
-            "ngx_rbuf nalloc buf: %ui\nngx_rbuf nfree buf: %ui\n"
             "ngx_rbuf nalloc chain: %ui\nngx_rbuf nfree chain: %ui\n",
-            ngx_rbuf_nalloc_node, ngx_rbuf_nalloc_buf, ngx_rbuf_nfree_buf,
-            ngx_rbuf_nalloc_chain, ngx_rbuf_nfree_chain);
+            ngx_rbuf_nalloc_node, ngx_rbuf_nalloc_chain, ngx_rbuf_nfree_chain);
 
 #if (NGX_DEBUG)
 
