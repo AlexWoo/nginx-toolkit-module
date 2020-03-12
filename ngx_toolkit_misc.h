@@ -32,6 +32,17 @@ typedef struct {
 
 
 /*
+ * gen 32 random string
+ *
+ * return value:
+ *      None
+ * paras:
+ *      id: u_char[32] to get random id
+ */
+void ngx_random32(u_char *id);
+
+
+/*
  * parse request url format as:
  *      scheme://[user@]host[:port]/path[?args][#fragment]
  *

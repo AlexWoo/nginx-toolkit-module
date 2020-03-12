@@ -24,6 +24,13 @@ ngx_scheme_port_t ngx_sheme_port[] = {
 #define FILEBUFSIZE     8192
 
 
+void
+ngx_random32(u_char *id) {
+    ngx_sprintf(id, "%08xD%08xD%08xD%08xD",
+                (uint32_t) ngx_random(), (uint32_t) ngx_random(),
+                (uint32_t) ngx_random(), (uint32_t) ngx_random());
+}
+
 socklen_t
 ngx_sock_pton_unix(struct sockaddr *sa, u_char *text, size_t len)
 {

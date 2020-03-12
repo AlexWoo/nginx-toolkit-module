@@ -1,6 +1,12 @@
+/*
+ * Copyright (C) AlexWoo(Wu Jie) wj19840501@gmail.com
+ */
+
+
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_http.h>
+#include "ngx_toolkit_misc.h"
 
 
 typedef struct {
@@ -101,14 +107,6 @@ static ngx_http_variable_t  ngx_http_trace_vars[] = {
 };
 
 
-static void
-ngx_http_trace_genid(u_char *id) {
-    ngx_sprintf(id, "%08xD%08xD%08xD%08xD",
-                (uint32_t) ngx_random(), (uint32_t) ngx_random(),
-                (uint32_t) ngx_random(), (uint32_t) ngx_random());
-}
-
-
 static u_char *
 ngx_http_trace_log_error(ngx_log_t *log, u_char *buf, size_t len)
 {
@@ -171,8 +169,8 @@ ngx_http_trace_first_request(ngx_http_request_t *r, ngx_http_trace_ctx_t *ctx)
 {
     ngx_table_elt_t                *h;
 
-    ngx_http_trace_genid(ctx->traceid);
-    ngx_http_trace_genid(ctx->cid);
+    ngx_random32(ctx->traceid);
+    ngx_random32(ctx->cid);
     ngx_sprintf(ctx->pid, "00000000000000000000000000000000");
 
     // Set X-NTM-Traceid
@@ -431,7 +429,7 @@ ngx_http_trace_newid_variable(ngx_http_request_t *r,
     }
 
     // fill newid
-    ngx_http_trace_genid(newid);
+    ngx_random32(newid);
 
     v->data = newid;
     v->len = sizeof(ctx->cid);
