@@ -19,6 +19,7 @@ typedef struct {
     u_char                      cid[32];     /* X-NTM-Currentid */
     u_char                      pid[32];     /* X-NTM-Parentid */
     ngx_flag_t                  debug;       /* X-NTM-Debug */
+    ngx_uint_t                  raw_level;   /* raw log level */
 } ngx_http_trace_ctx_t;
 
 
@@ -270,6 +271,8 @@ ngx_http_trace_handler(ngx_http_request_t *r)
     if (!v.not_found && v.len == 1 && v.data[0] == '1') {
         // Has header X-NTM-Debug: 1
         ctx->debug = 1;
+        ctx->raw_level = r->connection->log->log_level;
+        r->connection->log->log_level = NGX_LOG_DEBUG;
     }
 
     // Get X-NTM-Traceid
@@ -314,6 +317,22 @@ notfound:
     }
 
     return NGX_DECLINED;
+}
+
+
+static ngx_int_t
+ngx_http_trace_end_handler(ngx_http_request_t *r)
+{
+    ngx_http_trace_ctx_t           *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_trace_module);
+    if (ctx == NULL || ctx->debug == 0) {
+        return NGX_OK;
+    }
+
+    r->connection->log->log_level = ctx->raw_level;
+
+    return NGX_OK;
 }
 
 
@@ -520,6 +539,13 @@ ngx_http_trace_init(ngx_conf_t *cf)
     }
 
     *h = ngx_http_trace_handler;
+
+    h = ngx_array_push(&cmcf->phases[NGX_HTTP_LOG_PHASE].handlers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    *h = ngx_http_trace_end_handler;
 
     return NGX_OK;
 }

@@ -25,7 +25,8 @@ ngx_scheme_port_t ngx_sheme_port[] = {
 
 
 void
-ngx_random32(u_char *id) {
+ngx_random32(u_char *id)
+{
     ngx_sprintf(id, "%08xD%08xD%08xD%08xD",
                 (uint32_t) ngx_random(), (uint32_t) ngx_random(),
                 (uint32_t) ngx_random(), (uint32_t) ngx_random());
